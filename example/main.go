@@ -2,30 +2,31 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
 	"net"
 )
 
+const (
+	DefaultServerAddress string = "127.0.0.1:6666"
+	MaxConnectionCount   int    = 4096
+)
+
 type Server struct {
-	listener net.Listener
-	// robotManager *robot.InnerServerRobotManager
+	listener      net.Listener
+	connectionMgr []net.Conn
 }
 
-const DefaultServerAddress string = "127.0.0.1:6666"
-
-func NewInnserServer() *Server {
+func NewServer() *Server {
 	listener, listenError := net.Listen("tcp", DefaultServerAddress)
 	if listener == nil || listenError != nil {
+		fmt.Printf("Error: listen tcp %v occurs error: %v\n", DefaultServerAddress, listenError.Error())
 		return nil
 	}
 
 	return &Server{
-		listener: listener,
-		// robotManager: &robot.InnerServerRobotManager{
-		// 	BaseRobotManager: &robot.BaseRobotManager{
-		// 		RobotMap: make(map[int64]robotInterface.Robot),
-		// 	},
-		// },
+		listener:      listener,
+		connectionMgr: make([]net.Conn, 0, MaxConnectionCount),
 	}
 }
 
@@ -34,13 +35,18 @@ func (s *Server) Run() {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
+				fmt.Printf("Error: server listener closed\n")
 				return
 			}
+			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
 			continue
 		}
 
 		go handleRead(connection)
 		go handleWrite(connection)
+		go handleLogic()
+
+		s.connectionMgr = append(s.connectionMgr, connection)
 
 		// serverRobot := s.robotManager.NewServerRobot(connection)
 		// if serverRobot == nil {
