@@ -2,24 +2,30 @@ package connector
 
 import (
 	"net"
-	"robot-prototype/global"
-	robotInterface "robot-prototype/interface"
-	"time"
 )
 
+// Connector
+// logic goroutine -msg-> connector -> marshaler -bytes-> pack -packet-> OS
+// OS -packet-> unpack -bytes-> unmarshaler -> connector -msg-> logic goroutine
+
+type Connector interface {
+}
+
+// type
+
 type BaseConnector struct {
-	Connection net.Conn
+	net.Conn
 }
 
 func (c *BaseConnector) Address() string {
-	return c.Connection.RemoteAddr().String()
+	return c.Conn.RemoteAddr().String()
 }
 
 func (c *BaseConnector) Close() {
-	c.Connection.Close()
+	c.Conn.Close()
 }
 
-func NewConnector(connection net.Conn) robotInterface.Connector {
+func NewConnector(connection net.Conn) Connector {
 	return &MessageConnector{
 		BaseConnector: BaseConnector{
 			Connection: connection,
@@ -27,14 +33,14 @@ func NewConnector(connection net.Conn) robotInterface.Connector {
 	}
 }
 
-func NewConnectorWithAddress(address string) robotInterface.Connector {
-	connection, dailError := net.DialTimeout("tcp", address, time.Second*time.Duration(global.ConnectorDialTimeoutSeconds))
-	if dailError != nil {
-		return nil
-	}
-	return &MessageConnector{
-		BaseConnector: BaseConnector{
-			Connection: connection,
-		},
-	}
-}
+// func NewConnectorWithAddress(address string) robotInterface.Connector {
+// 	connection, dailError := net.DialTimeout("tcp", address, time.Second*time.Duration(global.ConnectorDialTimeoutSeconds))
+// 	if dailError != nil {
+// 		return nil
+// 	}
+// 	return &MessageConnector{
+// 		BaseConnector: BaseConnector{
+// 			Connection: connection,
+// 		},
+// 	}
+// }

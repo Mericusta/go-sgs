@@ -1,13 +1,14 @@
-//go:build tlv || worker
+// go:build tlv || worker
 
 package connector
 
 import (
 	"encoding/binary"
-	"robot-prototype/protocol"
+
+	"github.com/Mericusta/go-sgs/msg"
 )
 
-func (c *MessageConnector) ReceiveMsg() (protocol.MSG_ID, []byte, error) {
+func (c *MessageConnector) ReceiveMsg() (msg.MsgID, []byte, error) {
 	tagByteData := make([]byte, TLVPacketDataTagSize)
 	_, readTagError := c.Connection.Read(tagByteData)
 	if readTagError != nil {
@@ -27,5 +28,5 @@ func (c *MessageConnector) ReceiveMsg() (protocol.MSG_ID, []byte, error) {
 	if readMsgByteError != nil {
 		return 0, nil, readMsgByteError
 	}
-	return protocol.MSG_ID(tag), msgByteData, nil
+	return msg.MsgID(tag), msgByteData, nil
 }

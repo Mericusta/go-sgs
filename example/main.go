@@ -5,6 +5,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	"github.com/Mericusta/go-sgs/connector"
 )
 
 const (
@@ -37,8 +39,8 @@ type Server struct {
 // 	- 每个包内告知
 
 type Linker struct {
-	net.Conn
-	uid uint64
+	uid       uint64
+	connector connector.Connector
 	// msgMaker *MSG_MAKER_TYPE
 	// recv     chan *msgPacket
 	// send     chan *msgPacket
@@ -46,7 +48,7 @@ type Linker struct {
 
 func NewLinker(c net.Conn) *Linker {
 	return &Linker{
-		Conn: c,
+		Conn: connector.NewConnector(),
 		uid:  uint64(time.Now().UnixNano()), // TODO: distributed-guid
 		// msgMaker: &MSG_MAKER_TYPE{},
 		// recv:     make(chan *msgPacket, ChannelBuffer),
