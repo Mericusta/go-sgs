@@ -4,29 +4,38 @@ package connector
 
 import (
 	"encoding/binary"
+	"fmt"
 
 	"github.com/Mericusta/go-sgs/msg"
 )
 
-func (c *MessageConnector) ReceiveMsg() (msg.MsgID, []byte, error) {
-	tagByteData := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := c.Connection.Read(tagByteData)
+func (c *MessageConnector) ReceiveMsg() (msg.MsgID, msg.Msg, error) {
+	msgIDByte := make([]byte, TLVPacketDataTagSize)
+	_, readTagError := c.Connection.Read(msgIDByte)
 	if readTagError != nil {
 		return 0, nil, readTagError
 	}
-	tag := binary.BigEndian.Uint32(tagByteData)
+	msgID := binary.BigEndian.Uint32(msgIDByte)
 
-	lengthByteData := make([]byte, TLVPacketDataLengthSize)
-	_, readLengthError := c.Connection.Read(lengthByteData)
-	length := binary.BigEndian.Uint32(lengthByteData)
+	msgLengthByte := make([]byte, TLVPacketDataLengthSize)
+	_, readLengthError := c.Connection.Read(msgLengthByte)
+	msgValueLength := binary.BigEndian.Uint32(msgLengthByte)
 	if readLengthError != nil {
 		return 0, nil, readLengthError
 	}
 
-	msgByteData := make([]byte, int(length))
-	_, readMsgByteError := c.Connection.Read(msgByteData)
+	msgValueByte := make([]byte, int(msgValueLength))
+	readLength, readMsgByteError := c.Connection.Read(msgValueByte)
 	if readMsgByteError != nil {
 		return 0, nil, readMsgByteError
+	} else if readLength != int(msgValueLength) {
+		return 0, nil, fmt.Errorf("read msg %v %v length %v not equal packet length %v", msgID, msgValueByte, readLength, msgValueLength)
 	}
-	return msg.MsgID(tag), msgByteData, nil
+
+	msg, err := msg.Unmarshal(msg.MsgID, msgValueByte)
+	if err == nil {
+
+	}
+
+	return msg.MsgID(msgID), nil, nil
 }

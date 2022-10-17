@@ -1,12 +1,12 @@
-//go:build tlv || worker
+// go:build tlv || worker
 
 package connector
 
 import (
 	"encoding/binary"
-	"io"
-	"robot-prototype/protocol"
-	"robot-prototype/ui"
+	"fmt"
+
+	"github.com/Mericusta/go-sgs/msg"
 )
 
 // ┌─────┬────────┬───────┐
@@ -27,28 +27,34 @@ type MessageConnector struct {
 	BaseConnector
 }
 
-func (c *MessageConnector) SendMsg(msgID protocol.MSG_ID, msgByteData []byte) error {
-	msgByteDataLength := uint32(len(msgByteData))
-	tlvPackMsg := make([]byte, TLVPacketDataTagSize+TLVPacketDataLengthSize+msgByteDataLength)
-
-	// tlvPackMsg[0,TLVPacketDataTagSize]
-	binary.BigEndian.PutUint32(tlvPackMsg, uint32(msgID))
-
-	// tlvPackMsg[TLVPacketDataTagSize,TLVPacketDataTagSize+TLVPacketDataLengthSize]
-	binary.BigEndian.PutUint32(tlvPackMsg[TLVPacketDataTagSize:], msgByteDataLength)
-
-	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
-	copy(tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgByteData)
-
-	ui.OutputDebugInfo("tlv pack msg [%v, %v] byte data = %v", msgID, msgByteData, tlvPackMsg)
-
-	_, writeError := c.Connection.Write(tlvPackMsg)
-	if writeError != nil {
-		if writeError != io.EOF {
-			ui.OutputErrorInfo("connection write occurs error: %v", writeError)
-		}
-		return writeError
+func (c *MessageConnector) SendMsg(msgID msg.MsgID, msgData msg.Msg) error {
+	msgByteData, err := msgData.Marshal()
+	if len(msgByteData) == 0 {
+		return fmt.Errorf("marshal msg %v %v got empty slice", msgID, msgData)
+	}
+	if err != nil {
+		return err
 	}
 
-	return nil
+	msgByteDataLength := len(msgByteData)
+	tlvPacketLength := TLVPacketDataTagSize + TLVPacketDataLengthSize + msgByteDataLength
+	tlvPacket := make([]byte, tlvPacketLength)
+
+	// tlvPackMsg[0,TLVPacketDataTagSize]
+	binary.BigEndian.PutUint32(tlvPacket, uint32(msgID))
+
+	// tlvPackMsg[TLVPacketDataTagSize,TLVPacketDataTagSize+TLVPacketDataLengthSize]
+	binary.BigEndian.PutUint32(tlvPacket[TLVPacketDataTagSize:], uint32(msgByteDataLength))
+
+	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
+	copy(tlvPacket[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgByteData)
+
+	writeLength, writeError := c.BaseConnector.Connection.Write(tlvPacket)
+	if writeError != nil {
+		return writeError
+	} else if writeLength != tlvPacketLength {
+		return fmt.Errorf("write msg %v %v length %v not equal packet length %v", msgID, msgData, writeLength, msgByteDataLength)
+	}
+
+	return writeError
 }

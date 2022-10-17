@@ -2,6 +2,8 @@ package connector
 
 import (
 	"net"
+
+	"github.com/Mericusta/go-sgs/msg"
 )
 
 // Connector
@@ -9,20 +11,19 @@ import (
 // OS -packet-> unpack -bytes-> unmarshaler -> connector -msg-> logic goroutine
 
 type Connector interface {
+	SendMsg(msg.MsgID, msg.Msg) error
 }
 
-// type
-
 type BaseConnector struct {
-	net.Conn
+	Connection net.Conn
 }
 
 func (c *BaseConnector) Address() string {
-	return c.Conn.RemoteAddr().String()
+	return c.Connection.RemoteAddr().String()
 }
 
 func (c *BaseConnector) Close() {
-	c.Conn.Close()
+	c.Connection.Close()
 }
 
 func NewConnector(connection net.Conn) Connector {
