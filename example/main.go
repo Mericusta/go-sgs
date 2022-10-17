@@ -1,20 +1,57 @@
 package main
 
 import (
-	"encoding/binary"
 	"fmt"
 	"io"
 	"net"
+	"time"
 )
 
 const (
 	DefaultServerAddress string = "127.0.0.1:6666"
 	MaxConnectionCount   int    = 4096
+	ChannelBuffer        int    = 8
 )
 
 type Server struct {
-	listener      net.Listener
-	connectionMgr []net.Conn
+	listener  net.Listener
+	linkerMgr []*Linker
+}
+
+// resource model 1: 1 - 1 - 3
+// 1 client -> 1 socket -> 3 goroutine: read/write/logic
+// resource model 2: 1 - 1 - 2 - 1/n
+// 1 client -> 1 socket -> 2 goroutine: read/write -> logic: 1/n goroutine
+// resource model 3: 1 - 1 - 1/n - 1/m
+// 1 client -> 1 socket -> 1 goroutine: read -> logic: 1/n goroutine -> write: 1/m goroutine
+
+// msg process
+// os: tcp socket -> read goroutine: unpack []byte -> logic goroutine: unmarshal, handle
+// logic goroutine: handle, marshal -> send goroutine: pack []byte -> os: tcp socket
+
+// linker model
+// SELECT 1: 相同 linker，在经过不同编译条件的情况下，可以处理不同格式的 packet
+// NO-NEED 2: 相同 linker，在不经过编译的情况下，可以处理不同格式的 packet
+// - 在没有“额外信息（如何处理 packet）”的情况下不知道 packet 的处理格式
+// 	- 提前发包告知
+// 	- 每个包内告知
+
+type Linker struct {
+	net.Conn
+	uid uint64
+	// msgMaker *MSG_MAKER_TYPE
+	// recv     chan *msgPacket
+	// send     chan *msgPacket
+}
+
+func NewLinker(c net.Conn) *Linker {
+	return &Linker{
+		Conn: c,
+		uid:  uint64(time.Now().UnixNano()), // TODO: distributed-guid
+		// msgMaker: &MSG_MAKER_TYPE{},
+		// recv:     make(chan *msgPacket, ChannelBuffer),
+		// send:     make(chan *msgPacket, ChannelBuffer),
+	}
 }
 
 func NewServer() *Server {
@@ -25,8 +62,8 @@ func NewServer() *Server {
 	}
 
 	return &Server{
-		listener:      listener,
-		connectionMgr: make([]net.Conn, 0, MaxConnectionCount),
+		listener:  listener,
+		linkerMgr: make([]*Linker, 0, MaxConnectionCount),
 	}
 }
 
@@ -42,17 +79,11 @@ func (s *Server) Run() {
 			continue
 		}
 
-		go handleRead(connection)
-		go handleWrite(connection)
-		go handleLogic()
-
-		s.connectionMgr = append(s.connectionMgr, connection)
-
-		// serverRobot := s.robotManager.NewServerRobot(connection)
-		// if serverRobot == nil {
-		// 	continue
-		// }
-		// go serverRobot.Run(connection.RemoteAddr().String())
+		linker := NewLinker(connection)
+		go handleRead(linker)
+		go handleWrite(linker)
+		go handleLogic(linker)
+		s.linkerMgr = append(s.linkerMgr, linker)
 	}
 }
 
@@ -60,58 +91,25 @@ func (s *Server) Exit(exitOvertimeSeconds int) {
 	s.listener.Close()
 }
 
-// ┌─────┬────────┬───────┐
-// │ Tag │ Length │ Value │
-// ├─────┼────────┼───────┤
-// │  4  │   4    │       │
-// └─────┴────────┴───────┘
-
-const (
-	// TLV 格式数据包中数据的标识的值的占位长度
-	TLVPacketDataTagSize = 4
-
-	// TLV 格式数据包中数据的长度的值的占位长度
-	TLVPacketDataLengthSize = 4
-)
-
-func handleRead(connection net.Conn) {
+func handleRead(linker *Linker) {
 	for {
-		tag, msgByteData, err := receiveMsg(connection)
+		tag, data, err := unpackMsg(linker.Conn)
 		if err != nil {
 			if err != io.EOF && err.(*net.OpError).Err != net.ErrClosed {
-
+				// TODO: os read error
+				fmt.Printf("Error: os read tcp socket packet occurs error: %v", err.Error())
+				continue
 			}
-			close(r.ReceiveChan)
-			r.ReceiveChan = nil
+			// tcp socket closed
+			close(linker.recv)
+			linker.recv = nil
 			return
 		}
-		if tag != protocol.MSG_ID_S2C_HEART_BEAT {
-
+		linker.recv <- &msgPacket{
+			tag:  tag,
+			data: data,
 		}
 	}
-}
-
-func receiveMsg(connection net.Conn) (MSG_ID, []byte, error) {
-	tagByteData := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := c.Connection.Read(tagByteData)
-	if readTagError != nil {
-		return 0, nil, readTagError
-	}
-	tag := binary.BigEndian.Uint32(tagByteData)
-
-	lengthByteData := make([]byte, TLVPacketDataLengthSize)
-	_, readLengthError := c.Connection.Read(lengthByteData)
-	length := binary.BigEndian.Uint32(lengthByteData)
-	if readLengthError != nil {
-		return 0, nil, readLengthError
-	}
-
-	msgByteData := make([]byte, int(length))
-	_, readMsgByteError := c.Connection.Read(msgByteData)
-	if readMsgByteError != nil {
-		return 0, nil, readMsgByteError
-	}
-	return protocol.MSG_ID(tag), msgByteData, nil
 }
 
 func handleWrite(connection net.Conn) {
@@ -134,26 +132,6 @@ func handleWrite(connection net.Conn) {
 	}
 }
 
-func sendMsg(msgID protocol.MSG_ID, msgByteData []byte) error {
-	msgByteDataLength := uint32(len(msgByteData))
-	tlvPackMsg := make([]byte, TLVPacketDataTagSize+TLVPacketDataLengthSize+msgByteDataLength)
+func handleLogic(linker *Linker) {
 
-	// tlvPackMsg[0,TLVPacketDataTagSize]
-	binary.BigEndian.PutUint32(tlvPackMsg, uint32(msgID))
-
-	// tlvPackMsg[TLVPacketDataTagSize,TLVPacketDataTagSize+TLVPacketDataLengthSize]
-	binary.BigEndian.PutUint32(tlvPackMsg[TLVPacketDataTagSize:], msgByteDataLength)
-
-	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
-	copy(tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgByteData)
-
-	_, writeError := c.Connection.Write(tlvPackMsg)
-	if writeError != nil {
-		if writeError != io.EOF {
-
-		}
-		return writeError
-	}
-
-	return nil
 }
