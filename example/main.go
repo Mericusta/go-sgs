@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net"
 	"time"
 
 	"github.com/Mericusta/go-sgs/connector"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 const (
@@ -38,21 +40,58 @@ type Server struct {
 // 	- 提前发包告知
 // 	- 每个包内告知
 
+// connector
+// - unpack/pack tcp socket packet to []byte
+// - unmarshal/marshal []byte to Msg
+
+// dispatcher
+// - receive Msg from recv goroutine
+// - dispatch Msg to Handler and make Context
+// - dispatch Msg to send goroutine by Linker
+// - maybe different goroutine/program
+
+// handler
+// - handle Msg with Context
+// - make Msg and Save Context
+
+// ┌──────────────┬────────────────────────────────────┬─────────────────────┬─────────────────────────────┬──────────────────────────┐
+// │      OS      │     recv goroutine: connector      │   recv goroutine    │ logic goroutine: dispatcher │ logic goroutine: handler │
+// ├──────────────┼───────────────┬────────────────────┼─────────────────────┼─────────────────────────────┼──────────────────────────┤
+// │  TCP Socket  │ unpack []byte │ unmarshal protocol │ recv channel <- Msg │     Msg <- recv channel     │        handle Msg        │
+// └──────────────┴───────────────┴────────────────────┴─────────────────────┴─────────────────────────────┴──────────────────────────┘
+// ┌──────────────────────────┬─────────────────────────────┬─────────────────────┬────────────────────────────────┬────────────┐
+// │ logic goroutine: handler │ logic goroutine: dispatcher │   send goroutine    │   send goroutine: connector    │     OS     │
+// ├──────────────────────────┼─────────────────────────────┼─────────────────────┼──────────────────┬─────────────┼────────────┤
+// │         make Msg         │     send channel <- Msg     │ Msg <- send channel │ marshal protocol │ pack []byte │ TCP Socket │
+// └──────────────────────────┴─────────────────────────────┴─────────────────────┴──────────────────┴─────────────┴────────────┘
+
+type Msg struct {
+	id  protocol.ProtocolID
+	msg protocol.Protocol
+}
+
+func (m *Msg) ID() protocol.ProtocolID {
+	return m.id
+}
+
+func (m *Msg) Msg() protocol.Protocol {
+	return m.msg
+}
+
 type Linker struct {
 	uid       uint64
 	connector connector.Connector
-	// msgMaker *MSG_MAKER_TYPE
-	// recv     chan *msgPacket
-	// send     chan *msgPacket
+	recv      chan *Msg
+	send      chan *Msg
+	ctx       context.Context // dispatcher make
 }
 
-func NewLinker(c net.Conn) *Linker {
+func NewLinker(connection net.Conn) *Linker {
 	return &Linker{
-		Conn: connector.NewConnector(),
-		uid:  uint64(time.Now().UnixNano()), // TODO: distributed-guid
-		// msgMaker: &MSG_MAKER_TYPE{},
-		// recv:     make(chan *msgPacket, ChannelBuffer),
-		// send:     make(chan *msgPacket, ChannelBuffer),
+		connector: connector.NewConnector(connection),
+		uid:       uint64(time.Now().UnixNano()), // TODO: distributed-guid
+		recv:      make(chan *Msg, ChannelBuffer),
+		send:      make(chan *Msg, ChannelBuffer),
 	}
 }
 
@@ -82,8 +121,8 @@ func (s *Server) Run() {
 		}
 
 		linker := NewLinker(connection)
-		go handleRead(linker)
-		go handleWrite(linker)
+		go handleRecv(linker)
+		go handleSend(linker)
 		go handleLogic(linker)
 		s.linkerMgr = append(s.linkerMgr, linker)
 	}
@@ -93,13 +132,13 @@ func (s *Server) Exit(exitOvertimeSeconds int) {
 	s.listener.Close()
 }
 
-func handleRead(linker *Linker) {
+func handleRecv(linker *Linker) {
 	for {
-		tag, data, err := unpackMsg(linker.Conn)
+		msgID, msg, err := linker.connector.RecvMsg()
 		if err != nil {
 			if err != io.EOF && err.(*net.OpError).Err != net.ErrClosed {
-				// TODO: os read error
-				fmt.Printf("Error: os read tcp socket packet occurs error: %v", err.Error())
+				// TODO: connector read error
+				fmt.Printf("Error: connector read tcp socket packet occurs error: %v", err.Error())
 				continue
 			}
 			// tcp socket closed
@@ -107,33 +146,51 @@ func handleRead(linker *Linker) {
 			linker.recv = nil
 			return
 		}
-		linker.recv <- &msgPacket{
-			tag:  tag,
-			data: data,
+		linker.recv <- &Msg{
+			id:  msgID,
+			msg: msg,
 		}
 	}
 }
 
-func handleWrite(connection net.Conn) {
+func handleSend(linker *Linker) {
 	for {
-		sendMsg, ok := <-r.SendChan
+		sendMsg, ok := <-linker.send
 		if !ok {
-
-			return
+			fmt.Printf("Error: send msg is not ok\n")
+			continue
 		}
-		if sendMsg.MsgID != protocol.MSG_ID_C2S_HEART_BEAT {
-
-		}
-		err := r.Connector.SendMsg(sendMsg.MsgID, sendMsg.ByteData)
+		err := linker.connector.SendMsg(sendMsg.ID(), sendMsg.Msg())
 		if err != nil {
-			if err.(*net.OpError).Err != net.ErrClosed {
-
-			}
-			return
+			// TODO: connector send error
+			fmt.Printf("Error: connector send tcp socket packet occurs error: %v", err.Error())
 		}
 	}
 }
 
 func handleLogic(linker *Linker) {
-
+	for {
+		select {
+		case msg, ok := <-linker.recv:
+			if msg == nil || !ok {
+				fmt.Printf("Error: linker logic goroutine receive msg is nil or not ok\n")
+				continue
+			}
+			switch msg.ID() {
+			case 1:
+				fmt.Printf("Note: linker %v logic goroutine receive msg %v and response", linker.uid, msg.ID())
+				// TODO: logic type assert and self-increase
+				linker.send <- msg
+			default:
+				fmt.Printf("Error: linker %v logic goroutine receive unknown msg ID %v %v", linker.uid, msg.ID(), msg.Msg())
+				continue
+			}
+		case <-linker.ctx.Done():
+			fmt.Printf("Note: linker %v logic goroutine receive context done\n", linker.uid)
+			close(linker.send)
+			goto DONE
+		}
+	}
+DONE:
+	fmt.Printf("Note: linker %v logic goroutine done\n", linker.uid)
 }

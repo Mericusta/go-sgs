@@ -6,10 +6,10 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/Mericusta/go-sgs/msg"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
-func (c *MessageConnector) ReceiveMsg() (msg.MsgID, msg.Msg, error) {
+func (c *MessageConnector) RecvMsg() (protocol.ProtocolID, protocol.Protocol, error) {
 	msgIDByte := make([]byte, TLVPacketDataTagSize)
 	_, readTagError := c.Connection.Read(msgIDByte)
 	if readTagError != nil {
@@ -32,10 +32,12 @@ func (c *MessageConnector) ReceiveMsg() (msg.MsgID, msg.Msg, error) {
 		return 0, nil, fmt.Errorf("read msg %v %v length %v not equal packet length %v", msgID, msgValueByte, readLength, msgValueLength)
 	}
 
-	msg, err := msg.Unmarshal(msg.MsgID, msgValueByte)
-	if err == nil {
-
+	msg, err := protocol.Unmarshal(protocol.ProtocolID(msgID), msgValueByte)
+	if err != nil {
+		return 0, nil, err
+	} else if msg == nil {
+		return 0, nil, fmt.Errorf("unmarshal msg %v %v got empty", msgID, msgValueByte)
 	}
 
-	return msg.MsgID(msgID), nil, nil
+	return protocol.ProtocolID(msgID), nil, nil
 }

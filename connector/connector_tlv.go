@@ -6,7 +6,7 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/Mericusta/go-sgs/msg"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // ┌─────┬────────┬───────┐
@@ -23,20 +23,21 @@ const (
 	TLVPacketDataLengthSize = 4
 )
 
+// 根据编译选项来确定 connector，所以名称必须一致
 type MessageConnector struct {
 	BaseConnector
 }
 
-func (c *MessageConnector) SendMsg(msgID msg.MsgID, msgData msg.Msg) error {
-	msgByteData, err := msgData.Marshal()
-	if len(msgByteData) == 0 {
+func (c *MessageConnector) SendMsg(msgID protocol.ProtocolID, msgData protocol.Protocol) error {
+	msgValueByte, err := msgData.Marshal()
+	if len(msgValueByte) == 0 {
 		return fmt.Errorf("marshal msg %v %v got empty slice", msgID, msgData)
 	}
 	if err != nil {
 		return err
 	}
 
-	msgByteDataLength := len(msgByteData)
+	msgByteDataLength := len(msgValueByte)
 	tlvPacketLength := TLVPacketDataTagSize + TLVPacketDataLengthSize + msgByteDataLength
 	tlvPacket := make([]byte, tlvPacketLength)
 
@@ -47,7 +48,7 @@ func (c *MessageConnector) SendMsg(msgID msg.MsgID, msgData msg.Msg) error {
 	binary.BigEndian.PutUint32(tlvPacket[TLVPacketDataTagSize:], uint32(msgByteDataLength))
 
 	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
-	copy(tlvPacket[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgByteData)
+	copy(tlvPacket[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgValueByte)
 
 	writeLength, writeError := c.BaseConnector.Connection.Write(tlvPacket)
 	if writeError != nil {

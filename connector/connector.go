@@ -3,15 +3,12 @@ package connector
 import (
 	"net"
 
-	"github.com/Mericusta/go-sgs/msg"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
-// Connector
-// logic goroutine -msg-> connector -> marshaler -bytes-> pack -packet-> OS
-// OS -packet-> unpack -bytes-> unmarshaler -> connector -msg-> logic goroutine
-
 type Connector interface {
-	SendMsg(msg.MsgID, msg.Msg) error
+	SendMsg(protocol.ProtocolID, protocol.Protocol) error
+	RecvMsg() (protocol.ProtocolID, protocol.Protocol, error)
 }
 
 type BaseConnector struct {
