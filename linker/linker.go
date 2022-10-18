@@ -27,9 +27,9 @@ type Linker struct {
 	ctx       context.Context // dispatcher make
 }
 
-func NewLinker(connection net.Conn) *Linker {
+func New(connection net.Conn) *Linker {
 	return &Linker{
-		connector: connector.NewConnector(connection),
+		connector: connector.New(connection),
 		uid:       uint64(time.Now().UnixNano()), // TODO: distributed-guid
 		recv:      make(chan *msg.Msg, config.ChannelBuffer),
 		send:      make(chan *msg.Msg, config.ChannelBuffer),
@@ -54,7 +54,7 @@ func (linker *Linker) HandleRecv() {
 			linker.recv = nil
 			return
 		}
-		linker.recv <- msg.NewMsg(protocolID, protocolData)
+		linker.recv <- msg.New(protocolID, protocolData)
 	}
 }
 

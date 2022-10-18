@@ -8,7 +8,7 @@ type Msg struct {
 	data protocol.Protocol
 }
 
-func NewMsg(id protocol.ProtocolID, data protocol.Protocol) *Msg {
+func New(id protocol.ProtocolID, data protocol.Protocol) *Msg {
 	return &Msg{id: id, data: data}
 }
 

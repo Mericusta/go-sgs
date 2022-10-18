@@ -66,7 +66,7 @@ type Server struct {
 	linkerMgr []*linker.Linker
 }
 
-func NewServer() *Server {
+func New() *Server {
 	listener, listenError := net.Listen("tcp", config.DefaultServerAddress)
 	if listener == nil || listenError != nil {
 		fmt.Printf("Error: listen tcp %v occurs error: %v\n", config.DefaultServerAddress, listenError.Error())
@@ -91,7 +91,7 @@ func (s *Server) Run() {
 			continue
 		}
 
-		linker := linker.NewLinker(connection)
+		linker := linker.New(connection)
 		go linker.HandleRecv()
 		go linker.HandleSend()
 		go handleLogic(linker)

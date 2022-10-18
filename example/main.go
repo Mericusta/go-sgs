@@ -18,7 +18,7 @@ func main() {
 	linkerMap := sync.Map{}
 	wg := sync.WaitGroup{}
 	wg.Add(counter)
-	server := server.NewServer()
+	server := server.New()
 	go server.Run()
 
 	for index := 0; index != counter; index++ {
@@ -28,12 +28,12 @@ func main() {
 				fmt.Printf("Error: client %v dial tcp address %v occurs error: %v", i, config.DefaultServerAddress, dialError.Error())
 				return
 			}
-			linker := linker.NewLinker(connection)
+			linker := linker.New(connection)
 			linkerMap.Store(i, linker)
 			go linker.HandleRecv()
 			go linker.HandleSend()
 			go func(l *linker.Linker, t int) {
-				l.send <- msg.NewMsg(MsgIDHeartBeatCounter, &HeartBeatCounter{Count: t})
+				l.send <- msg.New(MsgIDHeartBeatCounter, &HeartBeatCounter{Count: t})
 				s2cMsg, ok := <-l.recv
 				if s2cMsg == nil || !ok {
 					panic(fmt.Sprintf("%v %v", s2cMsg, ok))

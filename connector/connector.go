@@ -23,7 +23,7 @@ func (c *BaseConnector) Close() {
 	c.Connection.Close()
 }
 
-func NewConnector(connection net.Conn) Connector {
+func New(connection net.Conn) Connector {
 	return &MessageConnector{
 		BaseConnector: BaseConnector{
 			Connection: connection,
