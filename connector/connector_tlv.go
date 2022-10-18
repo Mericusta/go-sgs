@@ -1,4 +1,4 @@
-// go:build tlv || worker
+// go:build tlv
 
 package connector
 
@@ -29,7 +29,7 @@ type MessageConnector struct {
 }
 
 func (c *MessageConnector) SendMsg(msgID protocol.ProtocolID, msgData protocol.Protocol) error {
-	msgValueByte, err := msgData.Marshal()
+	msgValueByte, err := protocol.Marshal(msgData)
 	if len(msgValueByte) == 0 {
 		return fmt.Errorf("marshal msg %v %v got empty slice", msgID, msgData)
 	}

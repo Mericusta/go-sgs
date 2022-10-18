@@ -1,32 +1,42 @@
-//go:build tlv || worker
+//go:build tlv
 
 package connector
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io"
-	"robot-prototype/protocol"
+
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
-func (c *MessageConnector) ReceiveMsg() (protocol.MSG_ID, []byte, error) {
-	tagByteData := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := io.ReadFull(c.Connection, tagByteData)
+func (c *MessageConnector) RecvMsg() (protocol.ProtocolID, protocol.Protocol, error) {
+	tagBytes := make([]byte, TLVPacketDataTagSize)
+	_, readTagError := io.ReadFull(c.BaseConnector.Connection, tagBytes)
 	if readTagError != nil {
 		return 0, nil, readTagError
 	}
-	tag := binary.BigEndian.Uint32(tagByteData)
+	tag := binary.BigEndian.Uint32(tagBytes)
 
-	lengthByteData := make([]byte, TLVPacketDataLengthSize)
-	_, readLengthError := io.ReadFull(c.Connection, lengthByteData)
-	length := binary.BigEndian.Uint32(lengthByteData)
+	lengthBytes := make([]byte, TLVPacketDataLengthSize)
+	_, readLengthError := io.ReadFull(c.Connection, lengthBytes)
 	if readLengthError != nil {
 		return 0, nil, readLengthError
 	}
+	length := binary.BigEndian.Uint32(lengthBytes)
 
-	msgByteData := make([]byte, int(length))
-	_, readMsgByteError := io.ReadFull(c.Connection, msgByteData)
-	if readMsgByteError != nil {
-		return 0, nil, readMsgByteError
+	valueBytes := make([]byte, int(length))
+	_, readValueError := io.ReadFull(c.Connection, valueBytes)
+	if readValueError != nil {
+		return 0, nil, readValueError
 	}
-	return protocol.MSG_ID(tag), msgByteData, nil
+
+	msg, err := protocol.Unmarshal(protocol.ProtocolID(tag), valueBytes)
+	if err != nil {
+		return 0, nil, err
+	} else if msg == nil {
+		return 0, nil, fmt.Errorf("unmarshal msg %v %v got empty", tag, valueBytes)
+	}
+
+	return protocol.ProtocolID(tag), msg, nil
 }

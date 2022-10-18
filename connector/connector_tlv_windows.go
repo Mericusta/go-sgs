@@ -1,4 +1,4 @@
-// go:build tlv || worker
+// go:build tlv
 
 package connector
 
@@ -10,34 +10,34 @@ import (
 )
 
 func (c *MessageConnector) RecvMsg() (protocol.ProtocolID, protocol.Protocol, error) {
-	msgIDByte := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := c.Connection.Read(msgIDByte)
+	tagBytes := make([]byte, TLVPacketDataTagSize)
+	_, readTagError := c.Connection.Read(tagBytes)
 	if readTagError != nil {
 		return 0, nil, readTagError
 	}
-	msgID := binary.BigEndian.Uint32(msgIDByte)
+	tag := binary.BigEndian.Uint32(tagBytes)
 
-	msgLengthByte := make([]byte, TLVPacketDataLengthSize)
-	_, readLengthError := c.Connection.Read(msgLengthByte)
-	msgValueLength := binary.BigEndian.Uint32(msgLengthByte)
+	lengthBytes := make([]byte, TLVPacketDataLengthSize)
+	_, readLengthError := c.Connection.Read(lengthBytes)
 	if readLengthError != nil {
 		return 0, nil, readLengthError
 	}
+	length := binary.BigEndian.Uint32(lengthBytes)
 
-	msgValueByte := make([]byte, int(msgValueLength))
-	readLength, readMsgByteError := c.Connection.Read(msgValueByte)
-	if readMsgByteError != nil {
-		return 0, nil, readMsgByteError
-	} else if readLength != int(msgValueLength) {
-		return 0, nil, fmt.Errorf("read msg %v %v length %v not equal packet length %v", msgID, msgValueByte, readLength, msgValueLength)
+	valueBytes := make([]byte, int(length))
+	readValueLength, readValueError := c.Connection.Read(valueBytes)
+	if readValueError != nil {
+		return 0, nil, readValueError
+	} else if readValueLength != int(length) {
+		return 0, nil, fmt.Errorf("read msg %v %v length %v not equal packet length %v", tag, valueBytes, readValueLength, length)
 	}
 
-	msg, err := protocol.Unmarshal(protocol.ProtocolID(msgID), msgValueByte)
+	msg, err := protocol.Unmarshal(protocol.ProtocolID(tag), valueBytes)
 	if err != nil {
 		return 0, nil, err
 	} else if msg == nil {
-		return 0, nil, fmt.Errorf("unmarshal msg %v %v got empty", msgID, msgValueByte)
+		return 0, nil, fmt.Errorf("unmarshal msg %v %v got empty", tag, valueBytes)
 	}
 
-	return protocol.ProtocolID(msgID), nil, nil
+	return protocol.ProtocolID(tag), msg, nil
 }
