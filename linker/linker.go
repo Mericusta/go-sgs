@@ -37,10 +37,19 @@ func New(connection net.Conn) *Linker {
 	}
 }
 
+func (l *Linker) Send(m *msg.Msg) {
+	l.send <- m
+}
+
+func (l *Linker) Recv() (*msg.Msg, bool) {
+	m, ok := <-l.recv
+	return m, ok
+}
+
 // recv goroutine
-func (linker *Linker) HandleRecv() {
+func (l *Linker) HandleRecv() {
 	for {
-		protocolID, protocolData, err := linker.connector.RecvMsg()
+		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
 			fmt.Printf("Error: connector read tcp socket packet occurs error: %v\n", err.Error())
 			if err != io.EOF {
@@ -50,26 +59,57 @@ func (linker *Linker) HandleRecv() {
 				}
 			}
 			// tcp socket closed
-			close(linker.recv)
-			linker.recv = nil
+			close(l.recv)
+			l.recv = nil
 			return
 		}
-		linker.recv <- msg.New(protocolID, protocolData)
+		l.recv <- msg.New(protocolID, protocolData)
 	}
 }
 
 // send goroutine
-func (linker *Linker) HandleSend() {
+func (l *Linker) HandleSend() {
 	for {
-		sendMsg, ok := <-linker.send
+		sendMsg, ok := <-l.send
 		if !ok {
 			fmt.Printf("Error: send msg is not ok\n")
 			continue
 		}
-		err := linker.connector.SendMsg(sendMsg.ID(), sendMsg.Msg())
+		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
 			// TODO: connector send error
 			fmt.Printf("Error: connector send tcp socket packet occurs error: %v", err.Error())
 		}
 	}
+}
+
+// logic goroutine: 1 - 1 - 1
+func (linker *Linker) HandleLogic() {
+	for {
+		select {
+		case msg, ok := <-linker.recv:
+			if msg == nil || !ok {
+				fmt.Printf("Error: linker logic goroutine receive msg is nil or not ok\n")
+				continue
+			}
+
+			// TODO: how to get callback without creating callback map for every linker ?
+			// - use global value map, multi goroutine read concurrently, also can not write after register
+			// - use sync.Map, but mutex is performance bottle neck
+			callback := msgCallbackMap[msg.ID()]
+			if callback == nil {
+				fmt.Printf("Error: msg ID %v callback is nil\n", msg.ID())
+				continue
+			}
+
+			// TODO: make context
+			callback(linker, msg.Data())
+		case <-linker.ctx.Done():
+			fmt.Printf("Note: linker %v logic goroutine receive context done\n", linker.uid)
+			close(linker.send)
+			goto DONE
+		}
+	}
+DONE:
+	fmt.Printf("Note: linker %v logic goroutine done\n", linker.uid)
 }

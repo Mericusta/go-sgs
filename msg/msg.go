@@ -16,6 +16,6 @@ func (m *Msg) ID() protocol.ProtocolID {
 	return m.id
 }
 
-func (m *Msg) Msg() protocol.Protocol {
+func (m *Msg) Data() protocol.Protocol {
 	return m.data
 }
