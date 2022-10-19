@@ -1,4 +1,4 @@
-// go:build tlv || json
+//go:build json
 
 package protocol
 

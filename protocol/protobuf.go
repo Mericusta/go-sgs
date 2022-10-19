@@ -1,4 +1,4 @@
-//go:build tlv || protobuf
+//go:build protobuf
 
 package protocol
 

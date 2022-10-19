@@ -1,8 +1,11 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"os"
+	"os/signal"
 	"sync"
 	"time"
 
@@ -31,28 +34,35 @@ func registerMsgCallback() {
 
 func main() {
 	counter := 10
-	linkerMap := sync.Map{}
 	wg := sync.WaitGroup{}
 	wg.Add(counter)
 
 	// server
 	registerMsgCallback()
-	server := server.New(dispatcher.New(msgCallbackMap))
+	serverCtx, serverCanceler := context.WithCancel(context.Background())
+	server := server.New(
+		serverCtx,
+		dispatcher.New(msgCallbackMap),
+	)
 	go server.Run()
 
 	// client
+	clientMap := sync.Map{}
+	clientCancelMap := make(map[int]context.CancelFunc)
 	for index := 0; index != counter; index++ {
-		go func(i int) {
+		var ctx context.Context
+		ctx, clientCancelMap[index] = context.WithCancel(context.Background())
+		go func(ctx context.Context, i int) {
 			connection, dialError := net.DialTimeout("tcp", config.DefaultServerAddress, time.Second)
 			if dialError != nil {
 				fmt.Printf("Error: client %v dial tcp address %v occurs error: %v", i, config.DefaultServerAddress, dialError.Error())
 				return
 			}
 			_linker := linker.New(connection)
-			linkerMap.Store(i, _linker)
-			go _linker.HandleRecv()
-			go _linker.HandleSend()
-			go func(l *linker.Linker, t int) {
+			clientMap.Store(i, _linker)
+			go _linker.HandleRecv(ctx)
+			go _linker.HandleSend(ctx)
+			go func(ctx context.Context, l *linker.Linker, t int) {
 				l.Send(msg.New(MsgIDHeartBeatCounter, &HeartBeatCounter{Count: t}))
 				s2cMsg, ok := l.Recv()
 				if s2cMsg == nil || !ok {
@@ -70,8 +80,13 @@ func main() {
 				}
 				fmt.Printf("Note: client %v %v done %v\n", i, l.UID(), t)
 				wg.Done()
-			}(_linker, i+1)
-		}(index)
+			}(ctx, _linker, i+1)
+		}(ctx, index)
 	}
 	wg.Wait()
+
+	s := make(chan os.Signal)
+	signal.Notify(s, os.Interrupt)
+	<-s
+	close(s)
 }

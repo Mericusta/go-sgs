@@ -52,7 +52,7 @@ func (l *Linker) Recv() (*msg.Msg, bool) {
 }
 
 // recv goroutine
-func (l *Linker) HandleRecv() {
+func (l *Linker) HandleRecv(ctx context.Context) {
 	for {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
@@ -73,7 +73,7 @@ func (l *Linker) HandleRecv() {
 }
 
 // send goroutine
-func (l *Linker) HandleSend() {
+func (l *Linker) HandleSend(ctx context.Context) {
 	for {
 		sendMsg, ok := <-l.send
 		if !ok {
@@ -89,7 +89,7 @@ func (l *Linker) HandleSend() {
 }
 
 // logic goroutine: 1 - 1 - 1
-func (l *Linker) HandleLogic(handlerMap map[protocol.ProtocolID]func(*Linker, protocol.Protocol)) {
+func (l *Linker) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Linker, protocol.Protocol)) {
 	for {
 		select {
 		case msg, ok := <-l.recv:

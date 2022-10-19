@@ -1,4 +1,4 @@
-// go:build tlv
+//go:build tlv
 
 package connector
 

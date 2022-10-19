@@ -1,8 +1,10 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
@@ -71,8 +73,15 @@ type Server struct {
 	dispatcher *dispatcher.Dispatcher
 }
 
-func New(dispatcher *dispatcher.Dispatcher) *Server {
-	listener, listenError := net.Listen("tcp", config.DefaultServerAddress)
+func New(ctx context.Context, dispatcher *dispatcher.Dispatcher) *Server {
+	var listener net.Listener
+	var listenError error
+	if config.TcpKeepAliveSeconds > 0 {
+		listenCfg := net.ListenConfig{KeepAlive: time.Second * 5}
+		listener, listenError = listenCfg.Listen(context.Background(), "tcp", config.DefaultServerAddress)
+	} else {
+		listener, listenError = net.Listen("tcp", config.DefaultServerAddress)
+	}
 	if listener == nil || listenError != nil {
 		fmt.Printf("Error: listen tcp %v occurs error: %v\n", config.DefaultServerAddress, listenError.Error())
 		return nil
@@ -85,7 +94,7 @@ func New(dispatcher *dispatcher.Dispatcher) *Server {
 	}
 }
 
-func (s *Server) Run() {
+func (s *Server) Run(ctx context.Context) {
 	for {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {
@@ -98,13 +107,14 @@ func (s *Server) Run() {
 		}
 
 		linker := linker.New(connection)
-		go linker.HandleRecv()
-		go linker.HandleSend()
-		go linker.HandleLogic(s.dispatcher.HandlerMap()) // TODO: dispatcher
+		go linker.HandleRecv(ctx)
+		go linker.HandleSend(ctx)
+		go linker.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
 		s.linkerMgr = append(s.linkerMgr, linker)
 	}
 }
 
-func (s *Server) Exit(exitOvertimeSeconds int) {
+func (s *Server) Exit() {
+
 	s.listener.Close()
 }
