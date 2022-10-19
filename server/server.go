@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/Mericusta/go-sgs/config"
+	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/linker"
 )
 
@@ -40,6 +41,10 @@ import (
 // resource model 3: 1 - 1 - 1/n - 1/m, need multi dispatcher
 // 1 client -> 1 socket -> 1 goroutine: read -> logic: 1/n goroutine -> write: 1/m goroutine
 
+// future feature: read channel without blocking, like try lock -> try read channel
+// resource model 3: 1 - 1/l - 1/m - 1/n, need multi dispatcher
+// 1 client -> 1 socket -> 1/l goroutine: read -> logic: 1/m goroutine -> write: 1/n goroutine
+
 // level 0: os tcp socket
 // level 1: specific server program
 // level 2: recv/send goroutine
@@ -61,11 +66,12 @@ import (
 
 // Server
 type Server struct {
-	listener  net.Listener
-	linkerMgr []*linker.Linker
+	listener   net.Listener
+	linkerMgr  []*linker.Linker
+	dispatcher *dispatcher.Dispatcher
 }
 
-func New() *Server {
+func New(dispatcher *dispatcher.Dispatcher) *Server {
 	listener, listenError := net.Listen("tcp", config.DefaultServerAddress)
 	if listener == nil || listenError != nil {
 		fmt.Printf("Error: listen tcp %v occurs error: %v\n", config.DefaultServerAddress, listenError.Error())
@@ -73,8 +79,9 @@ func New() *Server {
 	}
 
 	return &Server{
-		listener:  listener,
-		linkerMgr: make([]*linker.Linker, 0, config.MaxConnectionCount),
+		listener:   listener,
+		linkerMgr:  make([]*linker.Linker, 0, config.MaxConnectionCount),
+		dispatcher: dispatcher,
 	}
 }
 
@@ -93,7 +100,7 @@ func (s *Server) Run() {
 		linker := linker.New(connection)
 		go linker.HandleRecv()
 		go linker.HandleSend()
-		go linker.HandleLogic() // TODO: dispatcher
+		go linker.HandleLogic(s.dispatcher.HandlerMap()) // TODO: dispatcher
 		s.linkerMgr = append(s.linkerMgr, linker)
 	}
 }

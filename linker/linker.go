@@ -10,6 +10,7 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/connector"
 	"github.com/Mericusta/go-sgs/msg"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Linker
@@ -35,6 +36,10 @@ func New(connection net.Conn) *Linker {
 		send:      make(chan *msg.Msg, config.ChannelBuffer),
 		ctx:       context.Background(),
 	}
+}
+
+func (l *Linker) UID() uint64 {
+	return l.uid
 }
 
 func (l *Linker) Send(m *msg.Msg) {
@@ -84,10 +89,10 @@ func (l *Linker) HandleSend() {
 }
 
 // logic goroutine: 1 - 1 - 1
-func (linker *Linker) HandleLogic() {
+func (l *Linker) HandleLogic(handlerMap map[protocol.ProtocolID]func(*Linker, protocol.Protocol)) {
 	for {
 		select {
-		case msg, ok := <-linker.recv:
+		case msg, ok := <-l.recv:
 			if msg == nil || !ok {
 				fmt.Printf("Error: linker logic goroutine receive msg is nil or not ok\n")
 				continue
@@ -96,20 +101,20 @@ func (linker *Linker) HandleLogic() {
 			// TODO: how to get callback without creating callback map for every linker ?
 			// - use global value map, multi goroutine read concurrently, also can not write after register
 			// - use sync.Map, but mutex is performance bottle neck
-			callback := msgCallbackMap[msg.ID()]
+			callback := handlerMap[msg.ID()]
 			if callback == nil {
 				fmt.Printf("Error: msg ID %v callback is nil\n", msg.ID())
 				continue
 			}
 
 			// TODO: make context
-			callback(linker, msg.Data())
-		case <-linker.ctx.Done():
-			fmt.Printf("Note: linker %v logic goroutine receive context done\n", linker.uid)
-			close(linker.send)
+			callback(l, msg.Data())
+		case <-l.ctx.Done():
+			fmt.Printf("Note: linker %v logic goroutine receive context done\n", l.uid)
+			close(l.send)
 			goto DONE
 		}
 	}
 DONE:
-	fmt.Printf("Note: linker %v logic goroutine done\n", linker.uid)
+	fmt.Printf("Note: linker %v logic goroutine done\n", l.uid)
 }

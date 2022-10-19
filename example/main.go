@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Mericusta/go-sgs/config"
+	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/linker"
 	"github.com/Mericusta/go-sgs/msg"
 	"github.com/Mericusta/go-sgs/protocol"
@@ -36,7 +37,7 @@ func main() {
 
 	// server
 	registerMsgCallback()
-	server := server.New()
+	server := server.New(dispatcher.New(msgCallbackMap))
 	go server.Run()
 
 	// client
@@ -67,9 +68,9 @@ func main() {
 				if msg.Count != t+1 {
 					panic(fmt.Sprintf("%v", msg.Count))
 				}
-				fmt.Printf("Note: client %v done %v\n", i, t)
+				fmt.Printf("Note: client %v %v done %v\n", i, l.UID(), t)
 				wg.Done()
-			}(_linker, i)
+			}(_linker, i+1)
 		}(index)
 	}
 	wg.Wait()
