@@ -25,7 +25,7 @@ type Linker struct {
 	connector connector.Connector
 	recv      chan *msg.Msg
 	send      chan *msg.Msg
-	ctx       context.Context // dispatcher make
+	// ctx       context.Context // dispatcher make
 }
 
 func New(connection net.Conn) *Linker {
@@ -34,7 +34,7 @@ func New(connection net.Conn) *Linker {
 		uid:       uint64(time.Now().UnixNano()), // TODO: distributed-guid
 		recv:      make(chan *msg.Msg, config.ChannelBuffer),
 		send:      make(chan *msg.Msg, config.ChannelBuffer),
-		ctx:       context.Background(),
+		// ctx:       context.Background(),
 	}
 }
 
@@ -43,6 +43,9 @@ func (l *Linker) UID() uint64 {
 }
 
 func (l *Linker) Send(m *msg.Msg) {
+	if m == nil {
+		return
+	}
 	l.send <- m
 }
 
@@ -52,18 +55,19 @@ func (l *Linker) Recv() (*msg.Msg, bool) {
 }
 
 // recv goroutine
-func (l *Linker) HandleRecv(ctx context.Context) {
+func (l *Linker) HandleRecv() {
 	for {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
-			fmt.Printf("Error: connector read tcp socket packet occurs error: %v\n", err.Error())
 			if err != io.EOF {
 				if opError, ok := err.(*net.OpError); ok && opError.Err != net.ErrClosed {
 					// TODO: connector read error
+					fmt.Printf("Error: linker %v read tcp socket packet occurs error: %v\n", l.uid, err.Error())
 					continue
 				}
 			}
 			// tcp socket closed
+			fmt.Printf("Note: linker %v close recv channel and end recv goroutine\n", l.uid)
 			close(l.recv)
 			l.recv = nil
 			return
@@ -73,17 +77,22 @@ func (l *Linker) HandleRecv(ctx context.Context) {
 }
 
 // send goroutine
-func (l *Linker) HandleSend(ctx context.Context) {
+func (l *Linker) HandleSend() {
 	for {
-		sendMsg, ok := <-l.send
-		if !ok {
-			fmt.Printf("Error: send msg is not ok\n")
+		sendMsg, ok := <-l.send // TODO: close 的时候会触发 msg == nil && ok == false，此时代表已关闭，需要 return
+		if sendMsg == nil || !ok {
+			fmt.Printf("Error: linker %v send goroutine msg is nil %v or not ok %v\n", l.uid, sendMsg == nil, ok)
 			continue
 		}
 		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
-			// TODO: connector send error
-			fmt.Printf("Error: connector send tcp socket packet occurs error: %v", err.Error())
+			if err != io.EOF {
+				// TODO: connector send error
+				fmt.Printf("Error: linker %v send tcp socket packet occurs error: %v", l.uid, err.Error())
+				continue
+			}
+			fmt.Printf("Note: linker %v end send goroutine\n", l.uid)
+			return
 		}
 	}
 }
@@ -92,9 +101,9 @@ func (l *Linker) HandleSend(ctx context.Context) {
 func (l *Linker) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Linker, protocol.Protocol)) {
 	for {
 		select {
-		case msg, ok := <-l.recv:
+		case msg, ok := <-l.recv: // TODO: close 的时候会触发 msg == nil && ok == false，此时代表已关闭，需要 return
 			if msg == nil || !ok {
-				fmt.Printf("Error: linker logic goroutine receive msg is nil or not ok\n")
+				fmt.Printf("Error: linker %v logic goroutine receive msg is nil %v or not ok %v\n", l.uid, msg == nil, ok)
 				continue
 			}
 
@@ -109,12 +118,16 @@ func (l *Linker) HandleLogic(ctx context.Context, handlerMap map[protocol.Protoc
 
 			// TODO: make context
 			callback(l, msg.Data())
-		case <-l.ctx.Done():
-			fmt.Printf("Note: linker %v logic goroutine receive context done\n", l.uid)
+		case <-ctx.Done():
+			fmt.Printf("Note: linker %v receive context done and end logic goroutine\n", l.uid)
 			close(l.send)
 			goto DONE
 		}
 	}
 DONE:
 	fmt.Printf("Note: linker %v logic goroutine done\n", l.uid)
+}
+
+func (l *Linker) Close() {
+	l.connector.Close()
 }

@@ -40,11 +40,8 @@ func main() {
 	// server
 	registerMsgCallback()
 	serverCtx, serverCanceler := context.WithCancel(context.Background())
-	server := server.New(
-		serverCtx,
-		dispatcher.New(msgCallbackMap),
-	)
-	go server.Run()
+	server := server.New(dispatcher.New(msgCallbackMap))
+	go server.Run(serverCtx)
 
 	// client
 	clientMap := sync.Map{}
@@ -60,8 +57,8 @@ func main() {
 			}
 			_linker := linker.New(connection)
 			clientMap.Store(i, _linker)
-			go _linker.HandleRecv(ctx)
-			go _linker.HandleSend(ctx)
+			go _linker.HandleRecv()
+			go _linker.HandleSend()
 			go func(ctx context.Context, l *linker.Linker, t int) {
 				l.Send(msg.New(MsgIDHeartBeatCounter, &HeartBeatCounter{Count: t}))
 				s2cMsg, ok := l.Recv()
@@ -89,4 +86,7 @@ func main() {
 	signal.Notify(s, os.Interrupt)
 	<-s
 	close(s)
+	server.Exit()    // end tcp listener, all linker connection recv/send goroutine
+	serverCanceler() // end logic goroutine
+	time.Sleep(time.Second * 5)
 }

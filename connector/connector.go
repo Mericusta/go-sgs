@@ -9,6 +9,7 @@ import (
 type Connector interface {
 	SendMsg(protocol.ProtocolID, protocol.Protocol) error
 	RecvMsg() (protocol.ProtocolID, protocol.Protocol, error)
+	Close()
 }
 
 type BaseConnector struct {

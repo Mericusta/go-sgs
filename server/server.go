@@ -73,7 +73,7 @@ type Server struct {
 	dispatcher *dispatcher.Dispatcher
 }
 
-func New(ctx context.Context, dispatcher *dispatcher.Dispatcher) *Server {
+func New(dispatcher *dispatcher.Dispatcher) *Server {
 	var listener net.Listener
 	var listenError error
 	if config.TcpKeepAliveSeconds > 0 {
@@ -99,7 +99,7 @@ func (s *Server) Run(ctx context.Context) {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				fmt.Printf("Error: server listener closed\n")
+				fmt.Printf("Note: server listener closed\n")
 				return
 			}
 			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
@@ -107,14 +107,18 @@ func (s *Server) Run(ctx context.Context) {
 		}
 
 		linker := linker.New(connection)
-		go linker.HandleRecv(ctx)
-		go linker.HandleSend(ctx)
+		go linker.HandleRecv()
+		go linker.HandleSend()
 		go linker.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
 		s.linkerMgr = append(s.linkerMgr, linker)
 	}
 }
 
 func (s *Server) Exit() {
-
+	fmt.Printf("Note: server close listener\n")
 	s.listener.Close()
+	for _, linker := range s.linkerMgr {
+		fmt.Printf("Note: server close linker %v connection\n", linker.UID())
+		linker.Close()
+	}
 }
