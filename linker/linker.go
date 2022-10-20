@@ -49,9 +49,8 @@ func (l *Linker) Send(m *msg.Msg) {
 	l.send <- m
 }
 
-func (l *Linker) Recv() (*msg.Msg, bool) {
-	m, ok := <-l.recv
-	return m, ok
+func (l *Linker) Recv() <-chan *msg.Msg {
+	return l.recv
 }
 
 // recv goroutine
@@ -67,7 +66,7 @@ func (l *Linker) HandleRecv() {
 				}
 			}
 			// tcp socket closed
-			fmt.Printf("Note: linker %v close recv channel and end recv goroutine\n", l.uid)
+			fmt.Printf("Note: linker %v tcp socket is closed by remote, then close recv channel and end recv goroutine\n", l.uid)
 			close(l.recv)
 			l.recv = nil
 			return
@@ -81,27 +80,30 @@ func (l *Linker) HandleSend() {
 	for {
 		sendMsg, ok := <-l.send // TODO: close 的时候会触发 msg == nil && ok == false，此时代表已关闭，需要 return
 		if sendMsg == nil || !ok {
-			fmt.Printf("Error: linker %v send goroutine msg is nil %v or not ok %v\n", l.uid, sendMsg == nil, ok)
-			continue
+			// fmt.Printf("Error: linker %v send goroutine msg is nil %v or not ok %v\n", l.uid, sendMsg == nil, ok)
+			fmt.Printf("Error: linker %v send goroutine msg is nil %v or not ok %v, end send goroutine\n", l.uid, sendMsg == nil, ok)
+			return
 		}
 		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
-			if err != io.EOF {
+			fmt.Printf("Error: linker %v send tcp socket packet occurs error: %v", l.uid, err.Error())
+			if err == io.EOF {
 				// TODO: connector send error
-				fmt.Printf("Error: linker %v send tcp socket packet occurs error: %v", l.uid, err.Error())
-				continue
+				fmt.Printf("Note: linker %v tcp socket occurs io.EOF and end send goroutine\n", l.uid)
+				return
 			}
-			fmt.Printf("Note: linker %v end send goroutine\n", l.uid)
-			return
+			continue
 		}
 	}
 }
 
-// logic goroutine: 1 - 1 - 1
+// logic goroutine
 func (l *Linker) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Linker, protocol.Protocol)) {
 	for {
 		select {
-		case msg, ok := <-l.recv: // TODO: close 的时候会触发 msg == nil && ok == false，此时代表已关闭，需要 return
+		case msg, ok := <-l.recv:
+			// close 的时候会触发 msg == nil && ok == false，此时代表已关闭，需要 return
+			// 但是结束逻辑会由 context 的 cancel 提前触发，所以此处一般用不到
 			if msg == nil || !ok {
 				fmt.Printf("Error: linker %v logic goroutine receive msg is nil %v or not ok %v\n", l.uid, msg == nil, ok)
 				continue

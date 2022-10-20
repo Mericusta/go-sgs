@@ -3,7 +3,8 @@ package main
 import "github.com/Mericusta/go-sgs/protocol"
 
 const (
-	MsgIDHeartBeatCounter = iota + 1
+	C2SMsgID_HeartBeatCounter = iota + 1
+	S2CMsgID_HeartBeatCounter
 )
 
 type HeartBeatCounter struct {
@@ -12,6 +13,6 @@ type HeartBeatCounter struct {
 
 func init() {
 	protocol.RegisterMsgMaker(
-		protocol.ProtocolID(MsgIDHeartBeatCounter), func() any { return &HeartBeatCounter{} },
+		protocol.ProtocolID(C2SMsgID_HeartBeatCounter), func() any { return &HeartBeatCounter{} },
 	)
 }

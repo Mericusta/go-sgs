@@ -66,6 +66,16 @@ import (
 // │         make Msg         │     send channel <- Msg     │ Msg <- send channel │ marshal protocol │ pack []byte │ TCP Socket │
 // └──────────────────────────┴─────────────────────────────┴─────────────────────┴──────────────────┴─────────────┴────────────┘
 
+// end process
+// - from server:
+//     - server -> close listener -> close all linker tcp socket connection -> cancel logic goroutine
+
+// linker end process:
+// - close linker tcp socket connection
+//     - recv goroutine receive, then close recv channel and end recv goroutine
+//     - in server linker, logic goroutine will end by context canceler
+//     - in client linker, logic goroutine will
+
 // Server
 type Server struct {
 	listener   net.Listener
@@ -111,6 +121,7 @@ func (s *Server) Run(ctx context.Context) {
 		go linker.HandleSend()
 		go linker.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
 		s.linkerMgr = append(s.linkerMgr, linker)
+		fmt.Printf("Note: server create linker %v\n", linker.UID())
 	}
 }
 
