@@ -5,20 +5,20 @@ import "fmt"
 type Protocol any
 type ProtocolID uint32
 
-var msgMap map[ProtocolID]func() any = make(map[ProtocolID]func() any)
+var protocolMakerMap map[ProtocolID]func() any = make(map[ProtocolID]func() any)
 
-func RegisterMsgMaker(id ProtocolID, f func() any) {
-	msgMap[id] = f
+func RegisterProtocolMaker(id ProtocolID, f func() any) {
+	protocolMakerMap[id] = f
 }
 
-func newMsg(id ProtocolID) (any, error) {
-	msgMaker := msgMap[id]
-	if msgMaker == nil {
-		return nil, fmt.Errorf("unknown msg id %v", id)
+func newProtocol(id ProtocolID) (any, error) {
+	maker := protocolMakerMap[id]
+	if maker == nil {
+		return nil, fmt.Errorf("unknown protocol id %v", id)
 	}
-	msg := msgMaker()
-	if msg == nil {
-		return nil, fmt.Errorf("msg id %v maker make nil msg", id)
+	p := maker()
+	if p == nil {
+		return nil, fmt.Errorf("protocol id %v maker make a nil protocol", id)
 	}
-	return msg, nil
+	return p, nil
 }
