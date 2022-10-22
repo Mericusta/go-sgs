@@ -20,5 +20,6 @@ func registerClientMsgCallback() {
 			fmt.Printf("Error: client %v S2CMsgID_CalculatorAdd key %v s2c msg result %v not match expect %v\n", client.data.index, s2cMsg.Key, s2cMsg.Result, client.data.expectMap[s2cMsg.Key])
 			return
 		}
+		delete(client.data.expectMap, s2cMsg.Key)
 	}
 }

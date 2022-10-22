@@ -7,18 +7,17 @@ import (
 	"time"
 
 	"github.com/Mericusta/go-sgs/config"
-	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
 )
 
 // Framework
 type Framework struct {
-	listener   net.Listener
-	linkMgr    []*link.Link
-	dispatcher *dispatcher.Dispatcher
+	listener net.Listener
+	linkMgr  []*link.Link
 }
 
-func New(dispatcher *dispatcher.Dispatcher) *Framework {
+// 暂不用 dispatcher
+func New() *Framework {
 	var listener net.Listener
 	var listenError error
 	if config.TcpKeepAliveSeconds > 0 {
@@ -33,9 +32,8 @@ func New(dispatcher *dispatcher.Dispatcher) *Framework {
 	}
 
 	return &Framework{
-		listener:   listener,
-		linkMgr:    make([]*link.Link, 0, config.MaxConnectionCount),
-		dispatcher: dispatcher,
+		listener: listener,
+		linkMgr:  make([]*link.Link, 0, config.MaxConnectionCount),
 	}
 }
 

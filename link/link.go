@@ -23,8 +23,8 @@ import (
 type Link struct {
 	uid       uint64
 	connector connector.Connector
-	recv      chan *event.Event
-	send      chan *event.Event
+	recv      chan *event.Event // TODO: 不要传递小对象
+	send      chan *event.Event // TODO: 不要传递小对象
 	// ctx       context.Context // dispatcher make
 }
 
@@ -68,7 +68,6 @@ func (l *Link) HandleRecv() {
 			// tcp socket closed
 			fmt.Printf("Note: link %v tcp socket is closed by remote, then close recv channel and end recv goroutine\n", l.uid)
 			close(l.recv)
-			l.recv = nil
 			return
 		}
 		l.recv <- event.New(protocolID, protocolData)
@@ -78,7 +77,7 @@ func (l *Link) HandleRecv() {
 // send goroutine
 func (l *Link) HandleSend() {
 	for {
-		sendMsg, ok := <-l.send // TODO: close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
+		sendMsg, ok := <-l.send // TODO: connector close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
 		if sendMsg == nil || !ok {
 			// fmt.Printf("Error: link %v send goroutine event is nil %v or not ok %v\n", l.uid, sendMsg == nil, ok)
 			fmt.Printf("Error: link %v send goroutine event is nil %v or not ok %v, end send goroutine\n", l.uid, sendMsg == nil, ok)
@@ -98,6 +97,7 @@ func (l *Link) HandleSend() {
 }
 
 // logic goroutine
+// TODO: handle logic 不一定只由 link.recv 来触发，handle logic 本身是可以由数据驱动的（比如每隔一段时间主动推送消息）
 func (l *Link) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Link, protocol.Protocol)) {
 	for {
 		select {

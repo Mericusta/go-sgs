@@ -10,6 +10,7 @@ import (
 
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
+	"github.com/Mericusta/go-sgs/example/common"
 	"github.com/Mericusta/go-sgs/example/msg"
 	"github.com/Mericusta/go-sgs/link"
 )
@@ -43,7 +44,7 @@ func makeLink(index int, addr string, overtime time.Duration) {
 		fmt.Printf("Error: client %v dial tcp address %v occurs error: %v", index, config.DefaultServerAddress, dialError.Error())
 		return
 	}
-	client := NewClient(link.New(connection), index)
+	client := common.NewClient(link.New(connection), index)
 	clientMgr.Store(index, client)
 	fmt.Printf("Note: client %v created\n", index)
 }
@@ -51,7 +52,7 @@ func makeLink(index int, addr string, overtime time.Duration) {
 func runClients() {
 	clientMgr.Range(func(key, value any) bool {
 		clientIndex := key.(int)
-		client := value.(*Client)
+		client := value.(*common.Client)
 		go client.HandleRecv()
 		go client.HandleSend()
 		go handleLogic(clientContextMap[clientIndex], client)
@@ -60,14 +61,16 @@ func runClients() {
 }
 
 // data-driven
-func handleLogic(ctx context.Context, client *Client) {
+func handleLogic(ctx context.Context, client *common.Client) {
+	tickerCount := 0
 	ticker := time.NewTicker(time.Millisecond * time.Duration(rand.Intn(100)+1))
 	for {
 		select {
 		case <-ticker.C:
 			v1 := rand.Intn(int(time.Now().Unix()%86400)) + 1
 			v2 := rand.Intn(int(time.Now().Unix()%86400)) + 1
-			client.data.expectMap[len(client.data.expectMap)] = v1 + v2
+			client.data.expectMap[tickerCount] = v1 + v2
+			tickerCount++
 			client.Send(event.New(msg.C2SMsgID_CalculatorAdd, msg.C2SCalculatorData{Value1: v1, Value2: v2}))
 		case e, ok := <-client.Recv():
 			if e == nil || !ok {

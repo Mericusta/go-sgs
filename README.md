@@ -47,7 +47,24 @@
 
 #### Logic Goroutine
 
+> 不一定只由 `recv goroutine` 来触发，`logic goroutine` 本身是可以由**数据驱动**的（比如每隔一段时间主动推送消息或者接收到其他服务器推送给用户的消息）
+> 但**数据驱动**和 `dispatcher` 不好结合在一起，因为要**数据驱动**是独占 `logic goroutine` 的，而 `dispatcher` 的目的是共享 `logic goroutine`
+> **数据驱动**独占 `logic goroutine` 可以转化为 `dispatcher` 独占 `logic goroutine` 并监听**数据驱动**
+
 - logic goroutine 业务逻辑的 goroutine
+    - 被动接收，从 recv goroutine 来
+    - 主动发送，往 send goroutine 去
+- 考虑引入优先级 channel：
+    - 优先级1：接收消息 > 接收中断 > 发送中断 > 主动发送
+        - 被动的优先级高于主动
+        - 针对主动的 logic goroutine，中断的优先级更高
+        - 针对被动的 logic goroutine，中断的优先级更低
+
+- 1 被动接收
+- 2 被动结束
+- 3 主动结束
+- 4 主动发送
+    
 
 ### Concepts
 
