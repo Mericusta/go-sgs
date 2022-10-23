@@ -21,7 +21,7 @@ func registerServerMsgCallback() {
 			fmt.Printf("Error: msg ID %v data %+v not match\n", msg.C2SMsgID_CalculatorAdd, p)
 			return
 		}
-		user.data.addCounter++
+		user.AddCounter()
 		s2cMsg := &msg.S2CCalculatorData{
 			Key:    c2sMsg.Key,
 			Result: c2sMsg.Value1 + c2sMsg.Value2,

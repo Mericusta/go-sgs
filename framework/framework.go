@@ -8,6 +8,7 @@ import (
 
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Framework
@@ -37,7 +38,31 @@ func New() *Framework {
 	}
 }
 
-func (s *Framework) Run(ctx context.Context) {
+// func (s *Framework) Run(ctx context.Context) {
+// 	for {
+// 		connection, acceptError := s.listener.Accept()
+// 		if acceptError != nil {
+// 			if acceptError.(*net.OpError).Err == net.ErrClosed {
+// 				fmt.Printf("Note: server listener closed\n")
+// 				return
+// 			}
+// 			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
+// 			continue
+// 		}
+
+// 		l := link.New(connection)
+// 		go l.HandleRecv()
+// 		go l.HandleSend()
+// 		go l.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
+// 		s.linkMgr = append(s.linkMgr, l)
+// 		fmt.Printf("Note: server create link %v\n", l.UID())
+// 	}
+// }
+
+// TODO: 服务器 vs 服务器，相同的 framework
+// - 暴露问题1：handle logic 必须定义在 framework 中
+// - 暴露问题2：handle logic 的 link 的包裹体，必须成为 framework 中的一部分，否则就得用接口
+func (s *Framework) Run(ctx context.Context, link *LINKTYPE, tickerFunc func(*LINKTYPE), callbackMap map[protocol.ProtocolID]func(*LINKTYPE, protocol.Protocol)) {
 	for {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {

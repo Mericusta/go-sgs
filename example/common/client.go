@@ -10,8 +10,9 @@ type Client struct {
 }
 
 type clientUserData struct {
-	index     int
-	expectMap map[int]int
+	index       int
+	expectCount int
+	expectMap   map[int]int
 }
 
 func NewClient(l *link.Link, index int) *Client {
@@ -22,4 +23,23 @@ func NewClient(l *link.Link, index int) *Client {
 			expectMap: make(map[int]int),
 		},
 	}
+}
+
+func (c *Client) Index() int {
+	return c.data.index
+}
+
+func (c *Client) AddExpect(v int) int {
+	k := c.data.expectCount
+	c.data.expectMap[c.data.expectCount] = v
+	c.data.expectCount++
+	return k
+}
+
+func (c *Client) GetExpect(k int) int {
+	return c.data.expectMap[k]
+}
+
+func (c *Client) DelExpect(k int) {
+	delete(c.data.expectMap, k)
 }

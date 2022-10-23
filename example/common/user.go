@@ -22,3 +22,11 @@ func NewUser(l *link.Link, index int) *User {
 		},
 	}
 }
+
+func (c *User) Index() int {
+	return c.data.index
+}
+
+func (c *User) AddCounter() {
+	c.data.addCounter++
+}
