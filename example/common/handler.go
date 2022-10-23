@@ -27,7 +27,9 @@ LOOP:
 			}
 			// 发送逻辑
 			fmt.Printf("Note: link %v handle send logic\n", link.UID())
-			tickerFunc(link)
+			if tickerFunc != nil {
+				tickerFunc(link)
+			}
 		case e, ok := <-link.Recv(): // 被动接收，对端断开 tcp 套接字
 			if !ok { // 被动结束
 				fmt.Printf("Note: link %v receive channel closed\n", link.UID())
