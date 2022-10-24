@@ -13,22 +13,22 @@
 - use `middleware` as server option to control resources model
 
 - resource model 1: `1 - 1 - 3`
-    - generally no-need `dispatcher`
-    - 1 client -> 1 socket -> 3 goroutine: read/write/logic
+    - generally no-need `dispatcher`, or `dispatcher` is logic goroutine
+    - 1 client -> 1 socket -> 3 goroutine: recv/send/logic
 
 - resource model 2: `1 - 1 - 2 - 1/n`
-    - need `dispatcher`
-    - 1 client -> 1 socket -> 2 goroutine: read/write -> logic: 1/n goroutine
+    - need logic `dispatcher`, n recv/send goroutine share one dispatcher
+    - 1 client -> 1 socket -> 2 goroutine: recv/send -> logic: 1/n goroutine
 
 - resource model 3: `1 - 1 - 1/n - 1/m`
-    - need multi `dispatcher`
-    - 1 client -> 1 socket -> 1 goroutine: read -> logic: 1/n goroutine -> write: 1/m goroutine
+    - need multi kinds `dispatcher`, logic dispatcher and send dispatcher
+    - 1 client -> 1 socket -> 1 goroutine: recv -> logic: 1/n goroutine -> send: 1/m goroutine
 
 
 - resource model 4: `1 - 1/l - 1/m - 1/n`
-    - need multi `dispatcher`
-    - 1 client -> 1 socket -> 1/l goroutine: read -> logic: 1/m goroutine -> write: 1/n goroutine
-    - Note: expect golang feature: read channel without blocking, like try lock -> try read channel
+    - need multi kinds `dispatcher`, logic dispatcher, send dispatcher, recv dispatcher
+    - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
+    - Note: expect golang feature: recv channel without blocking, like try lock -> try recv channel
     
 #### Call chain level
 
@@ -49,13 +49,14 @@
 
 > 不一定只由 `recv goroutine` 来触发，`logic goroutine` 本身是可以由**数据驱动**的（比如每隔一段时间主动推送消息或者接收到其他服务器推送给用户的消息）
 > 但**数据驱动**和 `dispatcher` 不好结合在一起，因为要**数据驱动**是独占 `logic goroutine` 的，而 `dispatcher` 的目的是共享 `logic goroutine`
+>   - 数据驱动的数据中带上 logic goroutine 的上下文就可以实现数据隔离，logic goroutine 共享
 > **数据驱动**独占 `logic goroutine` 可以转化为 `dispatcher` 独占 `logic goroutine` 并监听**数据驱动**
 
 - logic goroutine 业务逻辑的 goroutine
     - 被动接收，从 recv goroutine 来
     - 主动发送，往 send goroutine 去
 - 考虑引入优先级 channel：
-    - 优先级1：接收消息 > 接收中断 > 发送中断 > 主动发送
+    - 优先级1：接收中断 > 接收消息 > 发送中断 > 主动发送
         - 被动的优先级高于主动
         - 针对主动的 logic goroutine，中断的优先级更高
         - 针对被动的 logic goroutine，中断的优先级更低
@@ -64,7 +65,6 @@
 - 2 被动结束
 - 3 主动结束
 - 4 主动发送
-    
 
 ### Concepts
 
@@ -121,7 +121,7 @@
 ### Process
 
 - client - server transport process
-    - os: tcp socket -> read goroutine: unpack []byte, unmarshal -> logic goroutine: handler
+    - os: tcp socket -> recv goroutine: unpack []byte, unmarshal -> logic goroutine: handler
     ```
     ┌──────────────┬────────────────────────────────────┬─────────────────────┬─────────────────────────────┬──────────────────────────┐
     │      OS      │     recv goroutine: connector      │   recv goroutine    │ logic goroutine: dispatcher │ logic goroutine: handler │

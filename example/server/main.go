@@ -5,10 +5,23 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"time"
 
 	"github.com/Mericusta/go-sgs/framework"
 )
+
+type UserMgr struct {
+	*framework.Framework
+	userMgr sync.Map
+}
+
+func NewUserMgr(ctx context.Context) *UserMgr {
+	return &UserMgr{
+		Framework: framework.New(),
+		userMgr:   sync.Map{},
+	}
+}
 
 func main() {
 	// register server protocol ID handler
@@ -16,11 +29,12 @@ func main() {
 
 	// create server
 	serverCtx, serverCanceler := context.WithCancel(context.Background())
-	server := framework.New()
+	server := NewUserMgr(serverCtx)
 
 	// run server
 	go server.Run(serverCtx)
 
+	// watch system signal
 	s := make(chan os.Signal)
 	signal.Notify(s, os.Interrupt)
 	<-s

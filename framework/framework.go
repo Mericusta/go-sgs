@@ -7,14 +7,16 @@ import (
 	"time"
 
 	"github.com/Mericusta/go-sgs/config"
+	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Framework
 type Framework struct {
-	listener net.Listener
-	linkMgr  []*link.Link
+	listener   net.Listener
+	linkMgr    map[uint64]*link.Link
+	dispatcher map[uint64]*dispatcher.Dispatcher
 }
 
 // 暂不用 dispatcher
@@ -33,8 +35,9 @@ func New() *Framework {
 	}
 
 	return &Framework{
-		listener: listener,
-		linkMgr:  make([]*link.Link, 0, config.MaxConnectionCount),
+		listener:   listener,
+		linkMgr:    make(map[uint64]*link.Link, config.MaxConnectionCount),
+		dispatcher: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
 	}
 }
 
@@ -59,10 +62,10 @@ func New() *Framework {
 // 	}
 // }
 
-// TODO: 服务器 vs 服务器，相同的 framework
+// TODO: 客户端 vs 服务器，相同的 framework
 // - 暴露问题1：handle logic 必须定义在 framework 中
 // - 暴露问题2：handle logic 的 link 的包裹体，必须成为 framework 中的一部分，否则就得用接口
-func (s *Framework) Run(ctx context.Context, handleLogic func[LINKTYPE Client | User](ctx context.Context, link *LINKTYPE, tickerFunc func(*LINKTYPE), callbackMap map[protocol.ProtocolID]func(*LINKTYPE, protocol.Protocol))) {
+func (s *Framework) Run(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*link.Link, protocol.Protocol)) {
 	for {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {
@@ -75,12 +78,16 @@ func (s *Framework) Run(ctx context.Context, handleLogic func[LINKTYPE Client | 
 		}
 
 		l := link.New(connection)
-		go l.HandleRecv()
-		go l.HandleSend()
-		// go l.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
-		go handleLogic(ctx, l, nil, s.dispatcher.HandlerMap())
-		s.linkMgr = append(s.linkMgr, l)
-		fmt.Printf("Note: server create link %v\n", l.UID())
+		s.linkMgr[l.UID()] = l
+		d := dispatcher.New(handlerMap)
+		s.dispatcher[l.UID()] = d
+		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
+		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
+		go l.HandleRecv() // TODO: 是否需要 ctx
+		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
+		go l.HandleSend() // TODO: 是否需要 ctx
+		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
+		go d.HandleLogic(ctx)
 	}
 }
 

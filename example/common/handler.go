@@ -8,6 +8,7 @@ import (
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
+// TODO: 不要 tickerFunc，用 event 或者什么代替，数据驱动
 func HandleLogic[LINKTYPE Client | User](ctx context.Context, link *LINKTYPE, tickerFunc func(*LINKTYPE), callbackMap map[protocol.ProtocolID]func(*LINKTYPE, protocol.Protocol)) {
 	ticker := time.NewTicker(time.Second)
 LOOP:
