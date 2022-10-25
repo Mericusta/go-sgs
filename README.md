@@ -102,6 +102,25 @@
 
 > github.com/Mericusta/go-sgs/dispatcher
 
+- 是否应该处理 send/recv 剩余的数据？
+    - 不应该，理由如下：
+    ```
+    框架层到应用层的抽象结构和调用链是栈结构，从建立 tcp socket 开始抽象层次依次为：
+        - level 0: tcp socket os
+        - level 1: connection send/recv goroutine
+        - level 2: link send/recv goroutine
+        - level 3: dispatcher logic goroutine
+        - level 4: user logic goroutine
+        - level 5: handler 栈顶
+    level 4~5 是应用层
+    level 1~3 是框架层
+    level 0 是系统层
+    - 当远端应用层主动退出时，如主动离线：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当远端应用层被动退出时，如远端断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    - 当本地应用层主动退出时，如踢掉客户端：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    保险起见，都不处理
+    ```
 - TODO: dispatcher 分发器
     - receive Msg from recv goroutine
     - dispatch Msg to Handler and make Context

@@ -87,7 +87,7 @@ func (s *Framework) Run(ctx context.Context, handlerMap map[protocol.ProtocolID]
 		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
 		go l.HandleSend() // TODO: 是否需要 ctx
 		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
-		go d.HandleLogic(ctx)
+		go d.HandleLogic(l)
 	}
 }
 

@@ -1,7 +1,6 @@
 package dispatcher
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/Mericusta/go-sgs/event"
@@ -24,27 +23,22 @@ func New(handlerMgr map[protocol.ProtocolID]func(*link.Link, protocol.Protocol))
 	}
 }
 
-func (d *Dispatcher) HandleLogic(ctx context.Context, link *link.Link) {
+func (d *Dispatcher) HandleLogic(link *link.Link) {
 LOOP:
 	for {
 		select {
-		case e, ok := <-d.eventChannel: // 主动发送
-		priority:
-			for {
-				select {
-				case <-ctx.Done(): // 主动结束，本端主动通过 context cancel 结束，必须保证本端先关闭 event channel
-					fmt.Printf("Note: dispatcher link %v context done\n", link.UID())
-					goto LOOP
-				default:
-					break priority
-				}
+		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
+			// 本地主动断开，需要处理 recv 剩余的数据
+			if !ok {
+				fmt.Printf("Note: dispatcher link %v event channel closed\n", link.UID())
+				link.Exit() // 关闭 connector，退出发送协程
+				// 关闭 connector 会导致接收协程退出
+				break LOOP
+				// TODO: 是否应该处理 recv 剩余的数据？
 			}
+
 			// 发送逻辑
 			fmt.Printf("Note: dispatcher link %v handle send logic\n", link.UID())
-			if !ok { // 由于对端断开 tcp 套接字而结束
-				fmt.Printf("Note: dispatcher link %v send channel closed\n", link.UID())
-				break LOOP
-			}
 			handler := d.handlerMgr[e.ID()]
 			if handler == nil {
 				fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
@@ -52,11 +46,18 @@ LOOP:
 			}
 			handler(link, e.Data())
 		case e, ok := <-link.Recv(): // 被动接收
-			if !ok { // 被动结束，对端断开 tcp 套接字
+			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
+			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connector
+			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connector（重复关闭）
+			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
+			if !ok {
 				fmt.Printf("Note: dispatcher link %v receive channel closed\n", link.UID())
-				close(d.eventChannel)
-				goto LOOP
+				link.Exit()           // 关闭 connector，退出发送协程
+				close(d.eventChannel) // 关闭主动发送通道
+				break LOOP            // 退出逻辑协程
+				// TODO: 是否需要处理 eventChannel 中剩余的内容？
 			}
+
 			// 接收逻辑
 			fmt.Printf("Note: dispatcher link %v handle recv logic\n", link.UID())
 			handler := d.handlerMgr[e.ID()]

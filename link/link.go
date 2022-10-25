@@ -20,8 +20,17 @@ import (
 // 	- 提前发包告知
 // 	- 每个包内告知
 
+type LINK_STATE int
+
+const (
+	LINK_INIT LINK_STATE = iota
+	LINK_CONNECTED
+	LINK_CLOSED
+)
+
 type Link struct {
 	uid       uint64
+	state     LINK_STATE
 	connector connector.Connector
 	recv      chan *event.Event // TODO: 不要传递小对象
 	send      chan *event.Event // TODO: 不要传递小对象
@@ -30,11 +39,11 @@ type Link struct {
 
 func New(connection net.Conn) *Link {
 	return &Link{
-		connector: connector.New(connection),
 		uid:       uint64(time.Now().UnixNano()), // TODO: distributed-guid
+		state:     LINK_CONNECTED,
+		connector: connector.New(connection),
 		recv:      make(chan *event.Event, config.ChannelBuffer),
 		send:      make(chan *event.Event, config.ChannelBuffer),
-		// ctx:       context.Background(),
 	}
 }
 
@@ -43,7 +52,7 @@ func (l *Link) UID() uint64 {
 }
 
 func (l *Link) Send(m *event.Event) {
-	if m == nil {
+	if m == nil || l.state != LINK_CONNECTED {
 		return
 	}
 	l.send <- m
@@ -58,19 +67,20 @@ func (l *Link) HandleRecv() {
 	for {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
-			if err != io.EOF {
-				if opError, ok := err.(*net.OpError); ok && opError.Err != net.ErrClosed {
-					// TODO: connector read error
-					fmt.Printf("Error: link %v read tcp socket packet occurs error: %v\n", l.uid, err.Error())
-					continue
-				}
+			if err == io.EOF {
+				fmt.Printf("Note: link %v tcp socket closed by remote\n", l.uid)
+			} else if opError, ok := err.(*net.OpError); ok && opError.Err == net.ErrClosed {
+				fmt.Printf("Note: link %v tcp socket closed by local\n", l.uid)
+			} else {
+				fmt.Printf("Note: link %v tcp socket read packet occurs error: %v\n", l.uid, err.Error())
+				continue
 			}
-			// tcp socket closed
-			fmt.Printf("Note: link %v tcp socket is closed by remote, then close recv channel and end recv goroutine\n", l.uid)
+			fmt.Printf("Note: link %v close recv channel\n", l.uid)
 			close(l.recv)
 			return
+		} else {
+			l.recv <- event.New(protocolID, protocolData)
 		}
-		l.recv <- event.New(protocolID, protocolData)
 	}
 }
 
@@ -79,7 +89,6 @@ func (l *Link) HandleSend() {
 	for {
 		sendMsg, ok := <-l.send // TODO: connector close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
 		if sendMsg == nil || !ok {
-			// fmt.Printf("Error: link %v send goroutine event is nil %v or not ok %v\n", l.uid, sendMsg == nil, ok)
 			fmt.Printf("Error: link %v send goroutine event is nil %v or not ok %v, end send goroutine\n", l.uid, sendMsg == nil, ok)
 			return
 		}
@@ -130,12 +139,12 @@ DONE:
 	fmt.Printf("Note: link %v logic goroutine done\n", l.uid)
 }
 
-// 主动断开 tcp socket
-func (l *Link) Close() {
-	l.connector.Close()
-}
-
 // 被动断开 tcp socket
 func (l *Link) Exit() {
+	// 标记状态，防止逻辑协程在 handler 中可能会往已关闭的 channel 中发送数据从而导致阻塞
+	l.state = LINK_CLOSED
+	// 主动断开 tcp socket
+	l.connector.Close()
+	// 退出 send 协程
 	close(l.send)
 }
