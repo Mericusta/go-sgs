@@ -7,6 +7,9 @@
 #### Drafts
 
 - TODO: 事件驱动，消息驱动
+- TODO: 中间件：控制资源模型
+- TODO: 中间件：隔离框架层和应用层上下文传递
+- TODO: 中间件：支持断点调试（断点会阻塞进程）
 
 #### Resource Model
 
@@ -127,15 +130,33 @@
     - dispatch Msg to send goroutine by Linker
     - maybe different goroutine/program
 
+#### Event
+
+- `recv/send goroutine` 和 `logic goroutine` 传递消息的载体
+
 #### Handler
 
-- handler 处理器
+- handler 处理器，分为两类
+    - 服务层处理器：不存在用户上下文
+    - 用户层处理器：存在用户上下文
 
 #### Framework
 
 > github.com/Mericusta/go-sgs/framework
 
 - framework 框架，对外服务器的基本框架，封装底层细节
+
+#### Middleware
+
+##### Resource Middleware
+
+##### Event Middleware
+
+##### Context Middleware
+
+##### Msg Middleware
+
+##### Handle Middleware
 
 ### Process
 

@@ -9,7 +9,6 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
-	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Framework
@@ -19,7 +18,6 @@ type Framework struct {
 	dispatcher map[uint64]*dispatcher.Dispatcher
 }
 
-// 暂不用 dispatcher
 func New() *Framework {
 	var listener net.Listener
 	var listenError error
@@ -65,7 +63,7 @@ func New() *Framework {
 // TODO: 客户端 vs 服务器，相同的 framework
 // - 暴露问题1：handle logic 必须定义在 framework 中
 // - 暴露问题2：handle logic 的 link 的包裹体，必须成为 framework 中的一部分，否则就得用接口
-func (s *Framework) Run(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*link.Link, protocol.Protocol)) {
+func (s *Framework) Run() {
 	for {
 		connection, acceptError := s.listener.Accept()
 		if acceptError != nil {
@@ -77,15 +75,16 @@ func (s *Framework) Run(ctx context.Context, handlerMap map[protocol.ProtocolID]
 			continue
 		}
 
+		// TODO: 可以考虑在这里启 go 协程，吧 linkMgr 和 dispatcher 改成 sync.Map
 		l := link.New(connection)
 		s.linkMgr[l.UID()] = l
-		d := dispatcher.New(handlerMap)
+		d := dispatcher.New()
 		s.dispatcher[l.UID()] = d
 		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
 		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
-		go l.HandleRecv() // TODO: 是否需要 ctx
+		go l.HandleRecv()
 		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
-		go l.HandleSend() // TODO: 是否需要 ctx
+		go l.HandleSend()
 		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
 		go d.HandleLogic(l)
 	}
@@ -94,8 +93,8 @@ func (s *Framework) Run(ctx context.Context, handlerMap map[protocol.ProtocolID]
 func (s *Framework) Exit() {
 	fmt.Printf("Note: server close listener\n")
 	s.listener.Close()
-	for _, l := range s.linkMgr {
-		fmt.Printf("Note: server close link %v connection\n", l.UID())
-		l.Close()
-	}
+	// 只需要退出 dispatcher，dispatcher 退出会引起
+	// for _, l := range s.linkMgr {
+	// 	fmt.Printf("Note: server close link %v connection\n", l.UID())
+	// }
 }

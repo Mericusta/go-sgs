@@ -1,32 +1,38 @@
 package msg
 
-import "github.com/Mericusta/go-sgs/protocol"
-
-const (
-	C2SMsgID_CalculatorAdd = iota + 1
-	S2CMsgID_CalculatorAdd
-	C2SMsgID_CalculatorSub
-	S2CMsgID_CalculatorSub
-	C2SMsgID_CalculatorMul
-	S2CMsgID_CalculatorMul
-	C2SMsgID_CalculatorDiv
-	S2CMsgID_CalculatorDiv
+import (
+	serverModel "github.com/Mericusta/go-sgs/example/model/server"
 )
 
-type C2SCalculatorData struct {
+const (
+	C2SMsgID_Login = iota + 1
+	S2CMsgID_Login
+	C2SMsgID_Business
+	S2CMsgID_Business
+	C2SMsgID_Logout
+	S2CMsgID_Logout
+)
+
+type C2SLoginData struct {
+	AccountID int `json:"account_id"`
+}
+
+type S2CLoginData struct {
+	AccountID int               `json:"account_id"`
+	User      *serverModel.User `json:"user"`
+}
+
+type C2SBusinessData struct {
 	Key    int `json:"key"`
 	Value1 int `json:"value1"`
 	Value2 int `json:"value2"`
 }
 
-type S2CCalculatorData struct {
+type S2CBusinessData struct {
 	Key    int `json:"key"`
 	Result int `json:"result"`
 }
 
-func init() {
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_CalculatorAdd), func() any { return &C2SCalculatorData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_CalculatorSub), func() any { return &C2SCalculatorData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_CalculatorMul), func() any { return &C2SCalculatorData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_CalculatorDiv), func() any { return &C2SCalculatorData{} })
-}
+type C2SLogout struct{}
+
+type S2CLogout struct{}

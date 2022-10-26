@@ -34,7 +34,6 @@ type Link struct {
 	connector connector.Connector
 	recv      chan *event.Event // TODO: 不要传递小对象
 	send      chan *event.Event // TODO: 不要传递小对象
-	// ctx       context.Context // dispatcher make
 }
 
 func New(connection net.Conn) *Link {
@@ -139,7 +138,7 @@ DONE:
 	fmt.Printf("Note: link %v logic goroutine done\n", l.uid)
 }
 
-// 被动断开 tcp socket
+// tcp socket
 func (l *Link) Exit() {
 	// 标记状态，防止逻辑协程在 handler 中可能会往已关闭的 channel 中发送数据从而导致阻塞
 	l.state = LINK_CLOSED
