@@ -9,12 +9,14 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Framework
 type Framework struct {
 	listener   net.Listener
 	linkMgr    map[uint64]*link.Link
+	handlerMgr map[protocol.ProtocolID]dispatcher.FrameworkHandler
 	dispatcher map[uint64]*dispatcher.Dispatcher
 }
 
@@ -88,6 +90,10 @@ func (s *Framework) Run() {
 		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
 		go d.HandleLogic(l)
 	}
+}
+
+func (s *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatcher.FrameworkHandler) {
+
 }
 
 func (s *Framework) Exit() {

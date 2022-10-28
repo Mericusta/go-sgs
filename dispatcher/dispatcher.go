@@ -6,28 +6,16 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/middleware"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
-type DispatchContext interface {
-	Link() *link.Link
-}
-
-type BaseDispatchContext struct {
-	l *link.Link
-}
-
-func (ctx *BaseDispatchContext) Link() *link.Link {
-	return ctx.l
-}
-
-func NewDispatchContext(l *link.Link) DispatchContext {
-	return &BaseDispatchContext{l: l}
-}
+type FrameworkHandler func(*link.Link, protocol.Protocol)
 
 type Dispatcher struct {
-	eventChannel chan *event.Event
-	// handlerMgr   HandlerMiddleware
-	middlewareSlice []func(DispatchContext, *event.Event)
+	eventChannel      chan *event.Event
+	handlerMgr        map[protocol.ProtocolID]FrameworkHandler
+	handlerMiddleware middleware.HandlerMiddleware
 }
 
 // TODO: 使用 dispatcher 传入 Link 的方式导致 client 和 server 不能复用 dispatcher
@@ -37,13 +25,12 @@ type Dispatcher struct {
 func New() *Dispatcher {
 	return &Dispatcher{
 		eventChannel: make(chan *event.Event, config.ChannelBuffer),
-		// handlerMgr:   handlerMgr,
-		middlewareSlice: make([]func(DispatchContext, *event.Event), 0),
+		handlerMgr:   make(map[protocol.ProtocolID]FrameworkHandler),
 	}
 }
 
-func (d *Dispatcher) AddMiddleware() {
-
+func (d *Dispatcher) SetHandlerMiddleware(hmd middleware.HandlerMiddleware) {
+	d.handlerMiddleware = hmd
 }
 
 func (d *Dispatcher) HandleLogic(link *link.Link) {
@@ -62,12 +49,14 @@ LOOP:
 
 			// 发送逻辑
 			fmt.Printf("Note: dispatcher link %v handle send logic, event %+v\n", link.UID(), e)
-			// handler := d.handlerMgr[e.ID()]
-			// if handler == nil {
-			// 	fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
-			// 	continue
-			// }
-			// handler(link, e.Data())
+			if d.handlerIntercept(link, e) {
+				handler := d.handlerMgr[e.ID()]
+				if handler == nil {
+					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
+					continue
+				}
+				handler(link, e.Data())
+			}
 		case e, ok := <-link.Recv(): // 被动接收
 			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
 			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connector
@@ -83,14 +72,23 @@ LOOP:
 
 			// 接收逻辑
 			fmt.Printf("Note: dispatcher link %v handle recv logic, event %+v\n", link.UID(), e)
-			// handler := d.handlerMgr[e.ID()]
-			// if handler == nil {
-			// 	fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
-			// 	continue
-			// }
-			// handler(link, e.Data())
+			if d.handlerIntercept(link, e) {
+				handler := d.handlerMgr[e.ID()]
+				if handler == nil {
+					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
+					continue
+				}
+				handler(link, e.Data())
+			}
 		}
 	}
+}
+
+func (d *Dispatcher) handlerIntercept(l *link.Link, e *event.Event) bool {
+	if d.handlerMiddleware == nil {
+		return true
+	}
+	return d.handlerMiddleware.Do(l, e)
 }
 
 func (d *Dispatcher) Exit() {

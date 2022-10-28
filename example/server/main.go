@@ -105,8 +105,9 @@ func (s *Server) serverHandlerMiddleware(l *link.Link, e *event.Event) {
 }
 
 func main() {
-	// register server protocol ID handler
-	registerUserHandler()
+	// register protocol ID handler
+	registerServerHandler() // use server context
+	registerUserHandler()   // use user context
 
 	// create server
 	server := NewServer()

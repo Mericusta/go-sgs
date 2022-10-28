@@ -5,4 +5,6 @@ import (
 	"github.com/Mericusta/go-sgs/link"
 )
 
-type HandlerMiddleware []func(*link.Link, *event.Event)
+type HandlerMiddleware interface {
+	Do(*link.Link, *event.Event) bool
+}
