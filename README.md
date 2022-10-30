@@ -159,6 +159,15 @@
 ##### Handle Middleware
 
 - 处理器中间件
+    - 流程控制
+    - 多个中间件：
+        - 层层传递？
+            - Framework 层如何知道层级之间的关系？
+        - 平级传递？
+            - 中间件有相互依赖如何处理？（MiddlewareA -> MiddlewareB 而 MiddlewareB -x-> MiddlewareA）
+        - 中间件排序？
+            - 添加中间件的时候如何知道其他中间件的信息？
+        - 通过 protocol ID 把消息路由到不同的 middleware 上去？
 
 ### Process
 

@@ -5,6 +5,10 @@ import (
 	"github.com/Mericusta/go-sgs/link"
 )
 
+type IContext interface {
+	Link() *link.Link
+}
+
 type HandlerMiddleware interface {
-	Do(*link.Link, *event.Event) bool
+	Do(IContext, *event.Event) bool
 }

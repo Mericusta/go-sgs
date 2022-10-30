@@ -9,15 +9,16 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/middleware"
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
 // Framework
 type Framework struct {
-	listener   net.Listener
-	linkMgr    map[uint64]*link.Link
-	handlerMgr map[protocol.ProtocolID]dispatcher.FrameworkHandler
-	dispatcher map[uint64]*dispatcher.Dispatcher
+	listener             net.Listener
+	handlerMgr           map[protocol.ProtocolID]dispatcher.FrameworkHandler
+	handlerMiddlewareMgr []middleware.HandlerMiddleware
+	dispatcher           map[uint64]*dispatcher.Dispatcher
 }
 
 func New() *Framework {
@@ -36,7 +37,6 @@ func New() *Framework {
 
 	return &Framework{
 		listener:   listener,
-		linkMgr:    make(map[uint64]*link.Link, config.MaxConnectionCount),
 		dispatcher: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
 	}
 }
@@ -79,21 +79,25 @@ func (s *Framework) Run() {
 
 		// TODO: 可以考虑在这里启 go 协程，吧 linkMgr 和 dispatcher 改成 sync.Map
 		l := link.New(connection)
-		s.linkMgr[l.UID()] = l
-		d := dispatcher.New()
+		d := dispatcher.New(l)
 		s.dispatcher[l.UID()] = d
+		d.SetHandlerMiddleware(s.handlerMiddlewareMgr)
 		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
 		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
 		go l.HandleRecv()
 		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
 		go l.HandleSend()
 		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
-		go d.HandleLogic(l)
+		go d.HandleLogic()
 	}
 }
 
 func (s *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatcher.FrameworkHandler) {
 
+}
+
+func (s *Framework) AppendHandlerMiddleware(hmd ...middleware.HandlerMiddleware) {
+	s.handlerMiddlewareMgr = append(s.handlerMiddlewareMgr, hmd...)
 }
 
 func (s *Framework) Exit() {
