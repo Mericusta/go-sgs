@@ -1,11 +1,10 @@
 package framework
 
 import (
-	"context"
 	"fmt"
 	"net"
-	"time"
 
+	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
@@ -15,59 +14,26 @@ import (
 
 // Framework
 type Framework struct {
-	listener             net.Listener
-	handlerMgr           map[protocol.ProtocolID]dispatcher.FrameworkHandler
-	handlerMiddlewareMgr []middleware.HandlerMiddleware
-	dispatcher           map[uint64]*dispatcher.Dispatcher
+	acceptorMgr         []acceptor.IAcceptor
+	connChan            chan net.Conn
+	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
+	handleMiddlewareMgr []middleware.HandleMiddleware
+	dispatcherMgr       map[uint64]*dispatcher.Dispatcher
 }
 
 func New() *Framework {
-	var listener net.Listener
-	var listenError error
-	if config.TcpKeepAliveSeconds > 0 {
-		listenCfg := net.ListenConfig{KeepAlive: time.Second * 5}
-		listener, listenError = listenCfg.Listen(context.Background(), "tcp", config.DefaultServerAddress)
-	} else {
-		listener, listenError = net.Listen("tcp", config.DefaultServerAddress)
-	}
-	if listener == nil || listenError != nil {
-		fmt.Printf("Error: listen tcp %v occurs error: %v\n", config.DefaultServerAddress, listenError.Error())
-		return nil
-	}
-
 	return &Framework{
-		listener:   listener,
-		dispatcher: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
+		acceptorMgr: []acceptor.IAcceptor{
+			acceptor.NewServerAcceptor("tcp", config.DefaultServerAddress, config.TcpKeepAlive),
+		},
+		connChan:      make(chan net.Conn, config.MaxConnectionCount),
+		dispatcherMgr: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
 	}
 }
 
-// func (s *Framework) Run(ctx context.Context) {
-// 	for {
-// 		connection, acceptError := s.listener.Accept()
-// 		if acceptError != nil {
-// 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-// 				fmt.Printf("Note: server listener closed\n")
-// 				return
-// 			}
-// 			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
-// 			continue
-// 		}
-
-// 		l := link.New(connection)
-// 		go l.HandleRecv()
-// 		go l.HandleSend()
-// 		go l.HandleLogic(ctx, s.dispatcher.HandlerMap()) // TODO: dispatcher
-// 		s.linkMgr = append(s.linkMgr, l)
-// 		fmt.Printf("Note: server create link %v\n", l.UID())
-// 	}
-// }
-
-// TODO: 客户端 vs 服务器，相同的 framework
-// - 暴露问题1：handle logic 必须定义在 framework 中
-// - 暴露问题2：handle logic 的 link 的包裹体，必须成为 framework 中的一部分，否则就得用接口
 func (s *Framework) Run() {
 	for {
-		connection, acceptError := s.listener.Accept()
+		connection, acceptError := s.acceptor.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
 				fmt.Printf("Note: server listener closed\n")
@@ -76,12 +42,10 @@ func (s *Framework) Run() {
 			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
 			continue
 		}
-
-		// TODO: 可以考虑在这里启 go 协程，吧 linkMgr 和 dispatcher 改成 sync.Map
 		l := link.New(connection)
 		d := dispatcher.New(l)
-		s.dispatcher[l.UID()] = d
-		d.SetHandlerMiddleware(s.handlerMiddlewareMgr)
+		s.dispatcherMgr[l.UID()] = d
+		d.SetHandleMiddleware(s.handleMiddlewareMgr)
 		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
 		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
 		go l.HandleRecv()
@@ -96,13 +60,14 @@ func (s *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatche
 
 }
 
-func (s *Framework) AppendHandlerMiddleware(hmd ...middleware.HandlerMiddleware) {
-	s.handlerMiddlewareMgr = append(s.handlerMiddlewareMgr, hmd...)
+func (s *Framework) AppendHandleMiddleware(hmd ...middleware.HandleMiddleware) {
+	s.handleMiddlewareMgr = append(s.handleMiddlewareMgr, hmd...)
 }
 
 func (s *Framework) Exit() {
-	fmt.Printf("Note: server close listener\n")
-	s.listener.Close()
+	fmt.Printf("Note: server close acceptor\n")
+	err := s.acceptor.Close()
+	fmt.Printf("Error: server close acceptor occurs error: %v\n", err)
 	// 只需要退出 dispatcher，dispatcher 退出会引起
 	// for _, l := range s.linkMgr {
 	// 	fmt.Printf("Note: server close link %v connection\n", l.UID())

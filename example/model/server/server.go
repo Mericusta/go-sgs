@@ -11,3 +11,7 @@ func NewUser() *User {
 func (u *User) AddCounter() {
 	u.counter++
 }
+
+func (u *User) GetCounter() int {
+	return u.counter
+}

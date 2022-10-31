@@ -33,8 +33,7 @@ func RegisterHandler() {
 		}
 
 		s2cMsg := &msg.S2CLoginData{
-			AccountID: int(ctx.Link().UID()),
-			User:      user,
+			User: user,
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
 	}

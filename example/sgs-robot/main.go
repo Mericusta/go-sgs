@@ -1,9 +1,10 @@
 package main
 
 import (
-	"context"
-
-	"github.com/Mericusta/go-sgs/framework"
+	"fmt"
+	"os"
+	"os/signal"
+	"time"
 )
 
 // // data-driven
@@ -40,16 +41,28 @@ import (
 // }
 
 func main() {
-	// register client protocol ID handler
-	registerClientMsgCallback()
+	const robotCount int = 1
 
-	// create server
-	serverCtx, serverCanceler := context.WithCancel(context.Background())
-	server := framework.New()
+	// register protocol ID handler
+	RegisterRobotHandler()
 
-	// // create clients
-	// createClients(clientCount)
+	// create robot manager
+	robotMgr := NewRobotMgr()
+
+	// create clients
+	robotMgr.CreateRobots(robotCount)
 
 	// // run clients
 	// runClients()
+
+	// watch system signal
+	s := make(chan os.Signal)
+	signal.Notify(s, os.Interrupt)
+	<-s
+	fmt.Printf("Note: close signal\n")
+	close(s)
+	fmt.Printf("Note: server exit\n")
+	robotMgr.Exit() // end tcp listener, all link connection recv goroutine
+	fmt.Printf("Note: waitting 5 seconds\n")
+	time.Sleep(time.Second * 5)
 }

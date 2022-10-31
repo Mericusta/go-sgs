@@ -13,13 +13,6 @@ import (
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
-// Link
-// SELECT 1: 相同 linker，在经过不同编译条件的情况下，可以处理不同格式的 packet
-// NO-NEED 2: 相同 linker，在不经过编译的情况下，可以处理不同格式的 packet
-// - 在没有“额外信息（如何处理 packet）”的情况下不知道 packet 的处理格式
-// 	- 提前发包告知
-// 	- 每个包内告知
-
 type LINK_STATE int
 
 const (

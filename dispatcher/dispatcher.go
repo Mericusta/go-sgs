@@ -13,16 +13,12 @@ import (
 type FrameworkHandler func(middleware.IContext, protocol.Protocol)
 
 type Dispatcher struct {
-	l                    *link.Link
-	eventChannel         chan *event.Event
-	handlerMgr           map[protocol.ProtocolID]FrameworkHandler
-	handlerMiddlewareMgr []middleware.HandlerMiddleware
+	l                   *link.Link
+	eventChannel        chan *event.Event
+	handlerMgr          map[protocol.ProtocolID]FrameworkHandler
+	handleMiddlewareMgr []middleware.HandleMiddleware
 }
 
-// TODO: 使用 dispatcher 传入 Link 的方式导致 client 和 server 不能复用 dispatcher
-// 因为 client 对每一个 link 的用户层抽象是 Client
-// 而 server 对每一个 link 的用户层抽象是 User
-// 可以考虑使用泛型或者接口来进行统一抽象
 func New(l *link.Link) *Dispatcher {
 	return &Dispatcher{
 		l:            l,
@@ -35,8 +31,8 @@ func (d *Dispatcher) Link() *link.Link {
 	return d.l
 }
 
-func (d *Dispatcher) SetHandlerMiddleware(hmdMgr []middleware.HandlerMiddleware) {
-	d.handlerMiddlewareMgr = hmdMgr
+func (d *Dispatcher) SetHandleMiddleware(hmdMgr []middleware.HandleMiddleware) {
+	d.handleMiddlewareMgr = hmdMgr
 }
 
 func (d *Dispatcher) HandleLogic() {
@@ -55,7 +51,7 @@ LOOP:
 
 			// 发送逻辑
 			fmt.Printf("Note: dispatcher link %v handle send logic, event %+v\n", d.Link().UID(), e)
-			if d.handlerIntercept(e) {
+			if d.handleIntercept(e) {
 				handler := d.handlerMgr[e.ID()]
 				if handler == nil {
 					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
@@ -78,7 +74,7 @@ LOOP:
 
 			// 接收逻辑
 			fmt.Printf("Note: dispatcher link %v handle recv logic, event %+v\n", d.Link().UID(), e)
-			if d.handlerIntercept(e) {
+			if d.handleIntercept(e) {
 				handler := d.handlerMgr[e.ID()]
 				if handler == nil {
 					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
@@ -90,9 +86,9 @@ LOOP:
 	}
 }
 
-func (d *Dispatcher) handlerIntercept(e *event.Event) bool {
-	for _, handlerMiddleware := range d.handlerMiddlewareMgr {
-		if !handlerMiddleware.Do(d, e) {
+func (d *Dispatcher) handleIntercept(e *event.Event) bool {
+	for _, handleMiddleware := range d.handleMiddlewareMgr {
+		if !handleMiddleware.Do(d, e) {
 			return false
 		}
 	}

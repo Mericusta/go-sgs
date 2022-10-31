@@ -10,6 +10,13 @@
 - TODO: 中间件：控制资源模型
 - TODO: 中间件：隔离框架层和应用层上下文传递
 - TODO: 中间件：支持断点调试（断点会阻塞进程）
+- Link
+    - 相同 linker，在经过不同编译条件的情况下，可以处理不同格式的 packet
+    - [DEPRECATED]相同 linker，在不经过编译的情况下，可以处理不同格式的 packet
+        - 在没有“额外信息（如何处理 packet）”的情况下不知道 packet 的处理格式
+        - 提前发包告知
+        - 每个包内告知
+
 
 #### Resource Model
 
@@ -83,6 +90,16 @@
     - TODO: MessagePack
     - TODO: bson
 
+#### Acceptor
+
+> github.com/Mericusta/go-sgs/acceptor
+
+- acceptor 接收器，产生 net.Conn 的方式
+    - 服务器接收器：通过 net.Listener.Accept() 方法产生 net.Conn
+    - 客户端接收器：通过 net.DialTimeout() 方法产生 net.Conn
+
+- 一个 framework 可以同时支持多个接收器
+
 #### Connector
 
 > github.com/Mericusta/go-sgs/connector
@@ -136,6 +153,9 @@
 
 #### Handler
 
+> handle 行为：通过 protocol ID 查找函数回调（称为 handler）并执行的过程
+> handle 行为的执行体
+
 - handler 处理器，分为两类
     - 服务层处理器：不存在用户上下文
     - 用户层处理器：存在用户上下文，可能分为多种类型的用户（客户端用户，服务器用户等）
@@ -148,17 +168,13 @@
 
 #### Middleware
 
-##### Resource Middleware
-
-##### Event Middleware
-
-##### Context Middleware
-
-##### Msg Middleware
+> middleware 指的是针对某一种行为的中间件 
 
 ##### Handle Middleware
 
-- 处理器中间件
+> 针对 handle 行为的中间件
+
+- handle 中间件
     - 流程控制
     - 多个中间件：
         - 层层传递？
@@ -168,6 +184,10 @@
         - 中间件排序？
             - 添加中间件的时候如何知道其他中间件的信息？
         - 通过 protocol ID 把消息路由到不同的 middleware 上去？
+
+##### Accept Middleware
+
+> 针对 accept 行为的中间件
 
 ### Process
 

@@ -10,23 +10,6 @@ import (
 	"github.com/Mericusta/go-sgs/example/sgs-server/user"
 )
 
-// type UserContext interface {
-// 	dispatcher.IContext
-// 	User() *serverModel.User
-// }
-
-// // func NewUserContext() UserContext {
-// // 	// return &
-// // }
-
-// type userHandlerMiddleware struct {
-// 	f func(UserContext, protocol.Protocol)
-// }
-
-// func (m *userHandlerMiddleware) Do(l *link.Link, e *event.Event) {
-// 	// userContext := newUser
-// }
-
 func main() {
 	// register protocol ID handler
 	server.RegisterHandler()   // use server context
@@ -36,7 +19,7 @@ func main() {
 	sgs := server.NewServer()
 
 	// append middleware
-	sgs.AppendHandlerMiddleware(
+	sgs.AppendHandleMiddleware(
 		server.NewMiddleware(sgs),
 		user.NewMiddleware(sgs),
 	)

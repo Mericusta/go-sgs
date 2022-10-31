@@ -18,8 +18,7 @@ type C2SLoginData struct {
 }
 
 type S2CLoginData struct {
-	AccountID int               `json:"account_id"`
-	User      *serverModel.User `json:"user"`
+	User *serverModel.User `json:"user"`
 }
 
 type C2SBusinessData struct {
