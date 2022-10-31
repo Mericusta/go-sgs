@@ -11,7 +11,7 @@ func Marshal(v any) ([]byte, error) {
 }
 
 func Unmarshal(id ProtocolID, b []byte) (any, error) {
-	msg, err := newMsg(id)
+	msg, err := newProtocol(id)
 	if msg == nil || err != nil {
 		return nil, err
 	}
