@@ -1,19 +1,34 @@
-package user
+package main
 
 import (
 	"fmt"
 
 	"github.com/Mericusta/go-sgs/event"
 	serverModel "github.com/Mericusta/go-sgs/example/model/server"
-	"github.com/Mericusta/go-sgs/example/sgs-server/server"
 	"github.com/Mericusta/go-sgs/middleware"
 )
 
-type UserMiddleware struct {
-	server *server.Server
+type ServerMiddleware struct {
+	server *Server
 }
 
-func NewMiddleware(server *server.Server) *UserMiddleware {
+func NewServerMiddleware(server *Server) *ServerMiddleware {
+	return &ServerMiddleware{server: server}
+}
+
+func (m *ServerMiddleware) Do(ctx middleware.IContext, e *event.Event) bool {
+	if handler, has := serverHandlerMgr[e.ID()]; handler != nil && has {
+		handler(NewServerContext(ctx, m.server), e.Data())
+		return false
+	}
+	return true
+}
+
+type UserMiddleware struct {
+	server *Server
+}
+
+func NewUserMiddleware(server *Server) *UserMiddleware {
 	return &UserMiddleware{server: server}
 }
 
@@ -29,7 +44,7 @@ func (m *UserMiddleware) Do(ctx middleware.IContext, e *event.Event) bool {
 			fmt.Printf("Error: server user manager uid %v value type is not *User\n", ctx.Link().UID())
 			return false
 		}
-		handler(NewContext(ctx, user), e.Data())
+		handler(NewUserContext(ctx, user), e.Data())
 		return false
 	}
 	return true

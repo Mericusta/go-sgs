@@ -5,24 +5,15 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
-	"github.com/Mericusta/go-sgs/example/sgs-server/server"
-	"github.com/Mericusta/go-sgs/example/sgs-server/user"
 )
 
 func main() {
 	// register protocol ID handler
-	server.RegisterHandler()   // use server context
-	user.RegisterUserHandler() // use user context
+	RegisterHandler()     // use server context
+	RegisterUserHandler() // use user context
 
 	// create server
-	sgs := server.NewServer()
-
-	// append middleware
-	sgs.AppendHandleMiddleware(
-		server.NewMiddleware(sgs),
-		user.NewMiddleware(sgs),
-	)
+	sgs := NewServer()
 
 	// run server
 	go sgs.Run()
