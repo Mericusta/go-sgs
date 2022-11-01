@@ -16,6 +16,7 @@
         - 在没有“额外信息（如何处理 packet）”的情况下不知道 packet 的处理格式
         - 提前发包告知
         - 每个包内告知
+- Accept 关闭不代表 connection 需要结束
 
 
 #### Resource Model
@@ -39,13 +40,19 @@
     - need multi kinds `dispatcher`, logic dispatcher, send dispatcher, recv dispatcher
     - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
     - Note: expect golang feature: recv channel without blocking, like try lock -> try recv channel
-    
+
 #### Call chain level
 
-- level 0: os tcp socket
-- level 1: specific server program
-- level 2: recv/send goroutine
-- level 3: logic goroutine
+- level 0: tcp socket os
+- level 1: connection send/recv goroutine
+- level 2: link send/recv goroutine
+- level 3: dispatcher logic goroutine
+- level 4: user logic goroutine
+- level 5: handler
+
+level 4~5 是应用层
+level 1~3 是框架层
+level 0 是系统层
 
 #### Recv Goroutine
 
@@ -78,7 +85,44 @@
 
 ### Concepts
 
-#### Protocol
+#### Framework Level Concepts
+
+##### Framework
+
+> github.com/Mericusta/go-sgs/framework
+
+- framework 框架，对外服务的基本框架，封装底层细节
+
+##### Dispatcher
+
+> github.com/Mericusta/go-sgs/dispatcher
+
+- TODO: dispatcher 分发器
+    - 执行`逻辑协程`
+    - 监听`发送通道`，主动发送消息，和 `send goroutine` 交互
+    - 监听`接收通道`，被动接收消息，和 `recv goroutine` 交互
+
+- 是否应该处理 send/recv 剩余的数据？
+    - 不应该，理由如下：
+    ```
+    框架层到应用层的抽象结构和调用链是栈结构，从建立 tcp socket 开始抽象层次依次为：
+        - level 0: tcp socket os
+        - level 1: connection send/recv goroutine
+        - level 2: link send/recv goroutine
+        - level 3: dispatcher logic goroutine
+        - level 4: user logic goroutine
+        - level 5: handler 栈顶
+    level 4~5 是应用层
+    level 1~3 是框架层
+    level 0 是系统层
+    - 当远端应用层主动退出时，如主动离线：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当远端应用层被动退出时，如远端断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    - 当本地应用层主动退出时，如踢掉客户端：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    保险起见，都不处理
+    ```
+
+##### Protocol
 
 > github.com/Mericusta/go-sgs/protocol
 
@@ -118,36 +162,9 @@
     - 提供 send goroutine 的执行逻辑
     - 对接 logic goroutine 的执行逻辑
 
-#### Dispatcher
-
-> github.com/Mericusta/go-sgs/dispatcher
-
-- 是否应该处理 send/recv 剩余的数据？
-    - 不应该，理由如下：
-    ```
-    框架层到应用层的抽象结构和调用链是栈结构，从建立 tcp socket 开始抽象层次依次为：
-        - level 0: tcp socket os
-        - level 1: connection send/recv goroutine
-        - level 2: link send/recv goroutine
-        - level 3: dispatcher logic goroutine
-        - level 4: user logic goroutine
-        - level 5: handler 栈顶
-    level 4~5 是应用层
-    level 1~3 是框架层
-    level 0 是系统层
-    - 当远端应用层主动退出时，如主动离线：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
-    - 当远端应用层被动退出时，如远端断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
-    - 当本地应用层主动退出时，如踢掉客户端：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
-    - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
-    保险起见，都不处理
-    ```
-- TODO: dispatcher 分发器
-    - receive Msg from recv goroutine
-    - dispatch Msg to Handler and make Context
-    - dispatch Msg to send goroutine by Linker
-    - maybe different goroutine/program
-
 #### Event
+
+> github.com/Mericusta/go-sgs/event
 
 - `recv/send goroutine` 和 `logic goroutine` 传递消息的载体
 
@@ -160,19 +177,15 @@
     - 服务层处理器：不存在用户上下文
     - 用户层处理器：存在用户上下文，可能分为多种类型的用户（客户端用户，服务器用户等）
 
-#### Framework
-
-> github.com/Mericusta/go-sgs/framework
-
-- framework 框架，对外服务器的基本框架，封装底层细节
-
 #### Middleware
 
 > middleware 指的是针对某一种行为的中间件 
+> middleware 作为连接媒介，必须定义在某个 concept 中
 
 ##### Handle Middleware
 
-> 针对 handle 行为的中间件
+> github.com/Mericusta/go-sgs/dispatcher
+> 针对 dispatcher 的 handle 行为的中间件
 
 - handle 中间件
     - 流程控制
@@ -184,10 +197,7 @@
         - 中间件排序？
             - 添加中间件的时候如何知道其他中间件的信息？
         - 通过 protocol ID 把消息路由到不同的 middleware 上去？
-
-##### Accept Middleware
-
-> 针对 accept 行为的中间件
+- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
 
 ### Process
 

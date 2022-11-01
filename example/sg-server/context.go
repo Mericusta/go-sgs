@@ -3,38 +3,38 @@ package main
 import (
 	"sync"
 
+	"github.com/Mericusta/go-sgs/dispatcher"
 	serverModel "github.com/Mericusta/go-sgs/example/model/server"
-	"github.com/Mericusta/go-sgs/middleware"
 )
 
 type IServerContext interface {
-	middleware.IContext
+	dispatcher.IContext
 	UserMgr() *sync.Map
 }
 
 type ServerContext struct {
-	middleware.IContext
-	*Server
+	dispatcher.IContext
+	*SGServer
 }
 
-func NewServerContext(ctx middleware.IContext, server *Server) IServerContext {
+func NewServerContext(ctx dispatcher.IContext, sgServer *SGServer) IServerContext {
 	return &ServerContext{
 		IContext: ctx,
-		Server:   server,
+		SGServer: sgServer,
 	}
 }
 
 type IUserContext interface {
-	middleware.IContext
+	dispatcher.IContext
 	User() *serverModel.User
 }
 
 type UserContext struct {
-	middleware.IContext
+	dispatcher.IContext
 	user *serverModel.User
 }
 
-func NewUserContext(ctx middleware.IContext, user *serverModel.User) IUserContext {
+func NewUserContext(ctx dispatcher.IContext, user *serverModel.User) IUserContext {
 	return &UserContext{
 		IContext: ctx,
 		user:     user,

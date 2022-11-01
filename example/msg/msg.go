@@ -2,6 +2,7 @@ package msg
 
 import (
 	serverModel "github.com/Mericusta/go-sgs/example/model/server"
+	"github.com/Mericusta/go-sgs/protocol"
 )
 
 const (
@@ -13,8 +14,17 @@ const (
 	S2CMsgID_Logout
 )
 
+func Init() {
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Login), func() any { return &C2SLoginData{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Login), func() any { return &S2CLoginData{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Business), func() any { return &C2SBusinessData{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Business), func() any { return &S2CBusinessData{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Logout), func() any { return &C2SLogout{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Logout), func() any { return &S2CLogout{} })
+}
+
 type C2SLoginData struct {
-	AccountID int `json:"account_id"`
+	AccountID uint64 `json:"account_id"`
 }
 
 type S2CLoginData struct {

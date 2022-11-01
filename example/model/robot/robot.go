@@ -1,18 +1,13 @@
 package robot
 
-import (
-	"github.com/Mericusta/go-sgs/dispatcher"
-)
-
 type Robot struct {
-	*dispatcher.Dispatcher
 	id      uint64
 	expect  map[int]int
 	counter int
 }
 
 func NewRobot(id uint64) *Robot {
-	return &Robot{id: id}
+	return &Robot{id: id, expect: make(map[int]int)}
 }
 
 func (r *Robot) ID() uint64 {

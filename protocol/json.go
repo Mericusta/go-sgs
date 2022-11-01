@@ -1,4 +1,4 @@
-//go:build json
+// go:build json
 
 package protocol
 

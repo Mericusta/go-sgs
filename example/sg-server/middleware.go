@@ -3,38 +3,38 @@ package main
 import (
 	"fmt"
 
+	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
 	serverModel "github.com/Mericusta/go-sgs/example/model/server"
-	"github.com/Mericusta/go-sgs/middleware"
 )
 
 type ServerMiddleware struct {
-	server *Server
+	sgServer *SGServer
 }
 
-func NewServerMiddleware(server *Server) *ServerMiddleware {
-	return &ServerMiddleware{server: server}
+func NewServerMiddleware(sgServer *SGServer) *ServerMiddleware {
+	return &ServerMiddleware{sgServer: sgServer}
 }
 
-func (m *ServerMiddleware) Do(ctx middleware.IContext, e *event.Event) bool {
+func (m *ServerMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := serverHandlerMgr[e.ID()]; handler != nil && has {
-		handler(NewServerContext(ctx, m.server), e.Data())
+		handler(NewServerContext(ctx, m.sgServer), e.Data())
 		return false
 	}
 	return true
 }
 
 type UserMiddleware struct {
-	server *Server
+	sgServer *SGServer
 }
 
-func NewUserMiddleware(server *Server) *UserMiddleware {
-	return &UserMiddleware{server: server}
+func NewUserMiddleware(sgServer *SGServer) *UserMiddleware {
+	return &UserMiddleware{sgServer: sgServer}
 }
 
-func (m *UserMiddleware) Do(ctx middleware.IContext, e *event.Event) bool {
+func (m *UserMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := userHandlerMgr[e.ID()]; handler != nil && has {
-		iUser, has := m.server.UserMgr().Load(ctx.Link().UID())
+		iUser, has := m.sgServer.UserMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
 		if !has {
 			fmt.Printf("Error: can not find user by uid %v", ctx.Link().UID())
 			return false

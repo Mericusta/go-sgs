@@ -6,17 +6,16 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/link"
-	"github.com/Mericusta/go-sgs/middleware"
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
-type FrameworkHandler func(middleware.IContext, protocol.Protocol)
+type FrameworkHandler func(IContext, protocol.Protocol)
 
 type Dispatcher struct {
 	l                   *link.Link
 	eventChannel        chan *event.Event
 	handlerMgr          map[protocol.ProtocolID]FrameworkHandler
-	handleMiddlewareMgr []middleware.HandleMiddleware
+	handleMiddlewareMgr []HandleMiddleware
 }
 
 func New(l *link.Link) *Dispatcher {
@@ -31,7 +30,11 @@ func (d *Dispatcher) Link() *link.Link {
 	return d.l
 }
 
-func (d *Dispatcher) SetHandleMiddleware(hmdMgr []middleware.HandleMiddleware) {
+func (d *Dispatcher) Dispatcher() *Dispatcher {
+	return d
+}
+
+func (d *Dispatcher) SetHandleMiddleware(hmdMgr []HandleMiddleware) {
 	d.handleMiddlewareMgr = hmdMgr
 }
 
@@ -51,14 +54,15 @@ LOOP:
 
 			// 发送逻辑
 			fmt.Printf("Note: dispatcher link %v handle send logic, event %+v\n", d.Link().UID(), e)
-			if d.handleIntercept(e) {
-				handler := d.handlerMgr[e.ID()]
-				if handler == nil {
-					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
-					continue
-				}
-				handler(d, e.Data())
-			}
+			// if d.handleIntercept(e) {
+			// 	handler := d.handlerMgr[e.ID()]
+			// 	if handler == nil {
+			// 		fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
+			// 		continue
+			// 	}
+			// 	handler(d, e.Data())
+			// }
+			d.Link().Send(e)
 		case e, ok := <-d.Link().Recv(): // 被动接收
 			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
 			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connector
@@ -93,6 +97,14 @@ func (d *Dispatcher) handleIntercept(e *event.Event) bool {
 		}
 	}
 	return true
+}
+
+func (d *Dispatcher) Send(e *event.Event) {
+	select {
+	case d.eventChannel <- e:
+	default:
+		return
+	}
 }
 
 func (d *Dispatcher) Exit() {

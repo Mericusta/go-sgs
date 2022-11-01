@@ -8,26 +8,26 @@ import (
 	"github.com/Mericusta/go-sgs/framework"
 )
 
-type Server struct {
+type SGServer struct {
 	*framework.Framework
 	userMgr *sync.Map
 }
 
-func NewServer() *Server {
-	s := &Server{
+func NewSGServer() *SGServer {
+	sgs := &SGServer{
 		Framework: framework.New(),
 		userMgr:   &sync.Map{},
 	}
-	s.AppendAcceptor(acceptor.NewServerAcceptor(
+	sgs.AppendAcceptor(acceptor.NewServerAcceptor(
 		"tcp", config.DefaultServerAddress, config.TcpKeepAlive,
 	))
-	s.AppendHandleMiddleware(
-		NewServerMiddleware(s),
-		NewUserMiddleware(s),
+	sgs.AppendHandleMiddleware(
+		NewServerMiddleware(sgs),
+		NewUserMiddleware(sgs),
 	)
-	return s
+	return sgs
 }
 
-func (s *Server) UserMgr() *sync.Map {
+func (s *SGServer) UserMgr() *sync.Map {
 	return s.userMgr
 }

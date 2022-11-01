@@ -8,24 +8,29 @@ import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
-	"github.com/Mericusta/go-sgs/middleware"
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
+type RunMiddleware interface {
+	Do(dispatcher.IContext) bool
+}
+
 // Framework
 type Framework struct {
+	linkCounter         uint
 	acceptorMgr         []acceptor.IAcceptor
 	connChan            chan net.Conn
-	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
-	handleMiddlewareMgr []middleware.HandleMiddleware
+	handleMiddlewareMgr []dispatcher.HandleMiddleware
 	dispatcherMgr       map[uint64]*dispatcher.Dispatcher
+	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
+	runMiddleware       RunMiddleware
 }
 
 func New() *Framework {
 	return &Framework{
-		acceptorMgr:   make([]acceptor.IAcceptor, 0),
 		connChan:      make(chan net.Conn, config.MaxConnectionCount),
 		dispatcherMgr: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
+		handlerMgr:    make(map[protocol.ProtocolID]dispatcher.FrameworkHandler),
 	}
 }
 
@@ -35,7 +40,7 @@ func (f *Framework) AppendAcceptor(acceptor acceptor.IAcceptor) {
 
 func (f *Framework) Run() {
 	if len(f.acceptorMgr) > 1 {
-		go f.run()
+		go f.recvConn()
 		for _, acceptor := range f.acceptorMgr {
 			go f.accept(acceptor)
 		}
@@ -50,23 +55,16 @@ func (f *Framework) singleRun() {
 		connection, acceptError := acceptor.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				fmt.Printf("Note: server listener closed\n")
+				fmt.Printf("Note: framework acceptor closed\n")
+				if connection != nil {
+					f.run(connection)
+				}
 				return
 			}
-			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
+			fmt.Printf("Error: framework acceptor accept connection occurs error: %v\n", acceptError.Error())
 			continue
 		}
-		l := link.New(connection)
-		d := dispatcher.New(l)
-		f.dispatcherMgr[l.UID()] = d
-		d.SetHandleMiddleware(f.handleMiddlewareMgr)
-		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
-		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
-		go l.HandleRecv()
-		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
-		go l.HandleSend()
-		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
-		go d.HandleLogic()
+		f.run(connection)
 	}
 }
 
@@ -85,28 +83,45 @@ func (f *Framework) accept(acceptor acceptor.IAcceptor) {
 	}
 }
 
-func (f *Framework) run() {
+func (f *Framework) recvConn() {
 	for connection := range f.connChan {
-		l := link.New(connection)
-		d := dispatcher.New(l)
-		f.dispatcherMgr[l.UID()] = d
-		d.SetHandleMiddleware(f.handleMiddlewareMgr)
-		fmt.Printf("Note: server create link and dispatcher %v\n", l.UID())
-		fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
-		go l.HandleRecv()
-		fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
-		go l.HandleSend()
-		fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
-		go d.HandleLogic()
+		f.run(connection)
+	}
+}
+
+func (f *Framework) run(connection net.Conn) {
+	l := link.New(connection)
+	d := dispatcher.New(l)
+	f.dispatcherMgr[l.UID()] = d
+	fmt.Printf("Note: create link and dispatcher %v\n", l.UID())
+	d.SetHandleMiddleware(f.handleMiddlewareMgr)
+	fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
+	go l.HandleRecv()
+	fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
+	go l.HandleSend()
+	fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
+	go d.HandleLogic()
+	if f.runMiddleware != nil {
+		f.runMiddleware.Do(d)
 	}
 }
 
 func (f *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatcher.FrameworkHandler) {
-
+	f.handlerMgr[msgID] = handler
 }
 
-func (f *Framework) AppendHandleMiddleware(hmd ...middleware.HandleMiddleware) {
+func (f *Framework) AppendHandleMiddleware(hmd ...dispatcher.HandleMiddleware) {
 	f.handleMiddlewareMgr = append(f.handleMiddlewareMgr, hmd...)
+}
+
+func (f *Framework) SetRunMiddleware(rmd RunMiddleware) {
+	f.runMiddleware = rmd
+}
+
+func (f *Framework) ForRangeDispatcher(handle func(uint64, *dispatcher.Dispatcher) bool) {
+	for id, d := range f.dispatcherMgr {
+		handle(id, d)
+	}
 }
 
 func (f *Framework) Exit() {

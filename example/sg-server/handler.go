@@ -32,6 +32,8 @@ func RegisterHandler() {
 			return
 		}
 
+		fmt.Printf("Note: user %v login with counter %v\n", ctx.Link().UID(), user.GetCounter())
+
 		s2cMsg := &msg.S2CLoginData{
 			User: user,
 		}
