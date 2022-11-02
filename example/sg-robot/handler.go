@@ -2,7 +2,10 @@ package main
 
 import (
 	"fmt"
+	"math/rand"
+	"time"
 
+	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/example/msg"
 	"github.com/Mericusta/go-sgs/protocol"
@@ -21,13 +24,20 @@ func RegisterRobotMgrHandler() {
 			return
 		}
 
-		fmt.Printf("Debug: %+v\n", s2cMsg.User)
-
 		robot := model.NewRobot(ctx.Link().UID())
 		robot.SetCounter(s2cMsg.User.GetCounter())
 		ctx.RobotMgr().Store(ctx.Link().UID(), robot)
 
 		fmt.Printf("Note: robot %v login with init counter %v\n", robot.ID(), s2cMsg.User.GetCounter())
+
+		key := int(time.Now().UnixNano())
+		v1, v2 := rand.Intn(1024), rand.Intn(1024)
+		robot.AddExpect(key, v1+v2)
+		c2sMsg := &msg.C2SBusinessData{
+			Key: key, Value1: v1, Value2: v2,
+		}
+		ctx.Link().Send(event.New(protocol.ProtocolID(msg.C2SMsgID_Business), c2sMsg))
+		fmt.Printf("Note: robot %v send business key %v value1 %v value2 %v, expect %v\n", robot.ID(), key, v1, v2, v1+v2)
 	}
 }
 
@@ -48,6 +58,8 @@ func RegisterRobotHandler() {
 			fmt.Printf("Error: robot %v S2CMsgID_Business key %v result %v not match expect %v\n", ctx.Robot().ID(), s2cMsg.Key, s2cMsg.Result, v)
 			return
 		}
+
 		ctx.Robot().DelExpect(s2cMsg.Key)
+		fmt.Printf("Note: robot %v recv business key %v result %v, then delete expect\n", ctx.Robot().ID(), s2cMsg.Key, s2cMsg.Result)
 	}
 }

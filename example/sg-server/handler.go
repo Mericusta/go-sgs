@@ -55,10 +55,10 @@ func RegisterUserHandler() {
 		}
 
 		ctx.User().AddCounter()
+		fmt.Printf("Note: user %v recv business key %v value1 %v value2 %v\n", ctx.Link().UID(), c2sMsg.Key, c2sMsg.Value1, c2sMsg.Value2)
 
 		s2cMsg := &msg.S2CBusinessData{
-			Key:    c2sMsg.Key,
-			Result: c2sMsg.Value1 + c2sMsg.Value2,
+			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
 	}
