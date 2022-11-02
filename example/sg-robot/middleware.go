@@ -5,7 +5,7 @@ import (
 
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
-	robotModel "github.com/Mericusta/go-sgs/example/model/robot"
+	"github.com/Mericusta/go-sgs/example/model"
 )
 
 type RobotMgrMiddleware struct {
@@ -39,7 +39,7 @@ func (m *RobotMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 			fmt.Printf("Error: can not find robot by uid %v", ctx.Link().UID())
 			return false
 		}
-		robot, ok := iRobot.(*robotModel.Robot)
+		robot, ok := iRobot.(*model.Robot)
 		if !ok {
 			fmt.Printf("Error: robot manager uid %v value type is not *Robot\n", ctx.Link().UID())
 			return false

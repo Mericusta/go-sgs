@@ -16,7 +16,6 @@
         - 在没有“额外信息（如何处理 packet）”的情况下不知道 packet 的处理格式
         - 提前发包告知
         - 每个包内告知
-- Accept 关闭不代表 connection 需要结束
 
 
 #### Resource Model
@@ -127,6 +126,7 @@ level 0 是系统层
 > github.com/Mericusta/go-sgs/protocol
 
 - protocol 协议格式，数据压缩/解压/加密/解密成 []byte 的算法
+    - TODO: 无法做 model 隔离，因为必须要导出
 
 - 支持协议格式：
     - json
@@ -143,6 +143,7 @@ level 0 是系统层
     - 客户端接收器：通过 net.DialTimeout() 方法产生 net.Conn
 
 - 一个 framework 可以同时支持多个接收器
+- Acceptor 关闭不代表 net.Conn 需要关闭
 
 #### Connector
 

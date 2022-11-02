@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	robotModel "github.com/Mericusta/go-sgs/example/model/robot"
+	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/example/msg"
 	"github.com/Mericusta/go-sgs/protocol"
 )
@@ -21,11 +21,13 @@ func RegisterRobotMgrHandler() {
 			return
 		}
 
-		robot := robotModel.NewRobot(ctx.Link().UID())
+		fmt.Printf("Debug: %+v\n", s2cMsg.User)
+
+		robot := model.NewRobot(ctx.Link().UID())
 		robot.SetCounter(s2cMsg.User.GetCounter())
 		ctx.RobotMgr().Store(ctx.Link().UID(), robot)
 
-		fmt.Printf("Note: robot %v login get init counter %v\n", robot.ID(), s2cMsg.User.GetCounter())
+		fmt.Printf("Note: robot %v login with init counter %v\n", robot.ID(), s2cMsg.User.GetCounter())
 	}
 }
 

@@ -5,7 +5,7 @@ import (
 
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
-	serverModel "github.com/Mericusta/go-sgs/example/model/server"
+	"github.com/Mericusta/go-sgs/example/model"
 )
 
 type ServerMiddleware struct {
@@ -39,7 +39,7 @@ func (m *UserMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 			fmt.Printf("Error: can not find user by uid %v", ctx.Link().UID())
 			return false
 		}
-		user, ok := iUser.(*serverModel.User)
+		user, ok := iUser.(*model.User)
 		if !ok {
 			fmt.Printf("Error: server user manager uid %v value type is not *User\n", ctx.Link().UID())
 			return false

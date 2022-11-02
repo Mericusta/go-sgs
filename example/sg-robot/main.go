@@ -20,6 +20,7 @@ func main() {
 	RegisterRobotHandler()
 
 	// create robot
+	fmt.Printf("Note: SG-Robot run\n")
 	sgr := NewSGRobot(robotCount)
 
 	// run robot

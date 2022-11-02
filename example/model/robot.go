@@ -1,4 +1,4 @@
-package robot
+package model
 
 type Robot struct {
 	id      uint64

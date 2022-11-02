@@ -1,19 +1,19 @@
-package server
+package model
 
 import "math/rand"
 
 type User struct {
-	counter int
+	Counter int `json:"counter"`
 }
 
 func NewUser() *User {
-	return &User{counter: rand.Intn(1024)}
+	return &User{Counter: rand.Intn(1024)}
 }
 
 func (u *User) AddCounter() {
-	u.counter++
+	u.Counter++
 }
 
 func (u *User) GetCounter() int {
-	return u.counter
+	return u.Counter
 }

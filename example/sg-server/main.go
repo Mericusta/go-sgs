@@ -21,6 +21,7 @@ func main() {
 	sgs := NewSGServer()
 
 	// run server
+	fmt.Printf("Note: SG-Server run\n")
 	go sgs.Run()
 
 	// watch system signal

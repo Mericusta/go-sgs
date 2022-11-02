@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/Mericusta/go-sgs/dispatcher"
-	serverModel "github.com/Mericusta/go-sgs/example/model/server"
+	"github.com/Mericusta/go-sgs/example/model"
 )
 
 type IServerContext interface {
@@ -26,21 +26,21 @@ func NewServerContext(ctx dispatcher.IContext, sgServer *SGServer) IServerContex
 
 type IUserContext interface {
 	dispatcher.IContext
-	User() *serverModel.User
+	User() *model.User
 }
 
 type UserContext struct {
 	dispatcher.IContext
-	user *serverModel.User
+	user *model.User
 }
 
-func NewUserContext(ctx dispatcher.IContext, user *serverModel.User) IUserContext {
+func NewUserContext(ctx dispatcher.IContext, user *model.User) IUserContext {
 	return &UserContext{
 		IContext: ctx,
 		user:     user,
 	}
 }
 
-func (ctx *UserContext) User() *serverModel.User {
+func (ctx *UserContext) User() *model.User {
 	return ctx.user
 }

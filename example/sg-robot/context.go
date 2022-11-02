@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/Mericusta/go-sgs/dispatcher"
-	"github.com/Mericusta/go-sgs/example/model/robot"
+	"github.com/Mericusta/go-sgs/example/model"
 )
 
 type IRobotMgrContext interface {
@@ -26,21 +26,21 @@ func NewRobotMgrContext(ctx dispatcher.IContext, sgRobot *SGRobot) IRobotMgrCont
 
 type IRobotContext interface {
 	dispatcher.IContext
-	Robot() *robot.Robot
+	Robot() *model.Robot
 }
 
 type RobotContext struct {
 	dispatcher.IContext
-	r *robot.Robot
+	r *model.Robot
 }
 
-func NewRobotContext(ctx dispatcher.IContext, r *robot.Robot) IRobotContext {
+func NewRobotContext(ctx dispatcher.IContext, r *model.Robot) IRobotContext {
 	return &RobotContext{
 		IContext: ctx,
 		r:        r,
 	}
 }
 
-func (ctx *RobotContext) Robot() *robot.Robot {
+func (ctx *RobotContext) Robot() *model.Robot {
 	return ctx.r
 }

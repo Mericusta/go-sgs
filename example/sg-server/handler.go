@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/Mericusta/go-sgs/event"
-	serverModel "github.com/Mericusta/go-sgs/example/model/server"
+	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/example/msg"
 	"github.com/Mericusta/go-sgs/protocol"
 )
@@ -22,13 +22,13 @@ func RegisterHandler() {
 			return
 		}
 
-		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Link().UID(), serverModel.NewUser())
+		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Link().UID(), model.NewUser())
 		if exists {
 			fmt.Printf("Warn: server user manager uid %v already exists\n", ctx.Link().UID())
 		}
-		user, ok := iUser.(*serverModel.User)
+		user, ok := iUser.(*model.User)
 		if !ok {
-			fmt.Printf("Error: server user manager uid %v value type is not *serverModel.User\n", ctx.Link().UID())
+			fmt.Printf("Error: server user manager uid %v value type is not *model.User\n", ctx.Link().UID())
 			return
 		}
 

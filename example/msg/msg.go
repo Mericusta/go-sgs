@@ -1,7 +1,7 @@
 package msg
 
 import (
-	serverModel "github.com/Mericusta/go-sgs/example/model/server"
+	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
@@ -28,7 +28,7 @@ type C2SLoginData struct {
 }
 
 type S2CLoginData struct {
-	User *serverModel.User `json:"user"`
+	User *model.User `json:"user"`
 }
 
 type C2SBusinessData struct {
