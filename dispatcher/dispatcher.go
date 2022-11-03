@@ -1,8 +1,7 @@
 package dispatcher
 
 import (
-	"fmt"
-
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/link"
@@ -45,7 +44,7 @@ LOOP:
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
 			// 本地主动断开
 			if !ok {
-				fmt.Printf("Note: dispatcher link %v event channel closed\n", d.Link().UID())
+				logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v event channel closed", d.Link().UID())
 				d.Link().Exit() // 关闭 connector，退出发送协程
 				// 关闭 connector 会导致接收协程退出
 				break LOOP
@@ -53,11 +52,11 @@ LOOP:
 			}
 
 			// 发送逻辑
-			fmt.Printf("Note: dispatcher link %v handle send logic, event %+v\n", d.Link().UID(), e)
+			logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v handle send logic, event %+v", d.Link().UID(), e)
 			// if d.handleIntercept(e) {
 			// 	handler := d.handlerMgr[e.ID()]
 			// 	if handler == nil {
-			// 		fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
+			// 		fmt.Printf("Error: dispatcher event ID %v handler is nil", e.ID())
 			// 		continue
 			// 	}
 			// 	handler(d, e.Data())
@@ -69,7 +68,7 @@ LOOP:
 			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connector（重复关闭）
 			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
 			if !ok {
-				fmt.Printf("Note: dispatcher link %v receive channel closed\n", d.Link().UID())
+				logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v receive channel closed", d.Link().UID())
 				d.Link().Exit()       // 关闭 connector，退出发送协程
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程
@@ -77,11 +76,11 @@ LOOP:
 			}
 
 			// 接收逻辑
-			fmt.Printf("Note: dispatcher link %v handle recv logic, event %+v\n", d.Link().UID(), e)
+			logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v handle recv logic, event %+v", d.Link().UID(), e)
 			if d.handleIntercept(e) {
 				handler := d.handlerMgr[e.ID()]
 				if handler == nil {
-					fmt.Printf("Error: dispatcher event ID %v handler is nil\n", e.ID())
+					logger.Error().Package("dispatcher").Func("HandleLogic").Content("dispatcher event ID %v handler is nil", e.ID())
 					continue
 				}
 				handler(d, e.Data())

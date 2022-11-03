@@ -1,9 +1,12 @@
 package framework
 
 import (
-	"fmt"
 	"net"
+	"os"
+	"os/signal"
+	"time"
 
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
@@ -39,44 +42,45 @@ func (f *Framework) AppendAcceptor(acceptor acceptor.IAcceptor) {
 }
 
 func (f *Framework) Run() {
-	if len(f.acceptorMgr) > 1 {
+	acceptorCount := len(f.acceptorMgr)
+	switch {
+	case acceptorCount > 1:
 		go f.recvConn()
 		for _, acceptor := range f.acceptorMgr {
 			go f.accept(acceptor)
 		}
-	} else {
+	case acceptorCount == 1:
 		f.singleRun()
+	default:
+		logger.Warn().Package("framework").Content("not have any acceptor")
 	}
 }
 
 func (f *Framework) singleRun() {
-	acceptor := f.acceptorMgr[0]
-	for {
-		connection, acceptError := acceptor.Accept()
+	a := f.acceptorMgr[0]
+	for a.State() == acceptor.LISTENING {
+		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				fmt.Printf("Note: framework acceptor closed\n")
-				if connection != nil {
-					f.run(connection)
-				}
+				logger.Info().Package("framework").Package("Framework").Func("singleRun").Content("acceptor closed")
 				return
 			}
-			fmt.Printf("Error: framework acceptor accept connection occurs error: %v\n", acceptError.Error())
+			logger.Error().Package("framework").Package("Framework").Func("singleRun").Content("acceptor accept connection occurs error: %v", acceptError.Error())
 			continue
 		}
 		f.run(connection)
 	}
 }
 
-func (f *Framework) accept(acceptor acceptor.IAcceptor) {
-	for {
-		connection, acceptError := acceptor.Accept()
+func (f *Framework) accept(a acceptor.IAcceptor) {
+	for a.State() == acceptor.LISTENING {
+		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				fmt.Printf("Note: server listener closed\n")
+				logger.Info().Package("framework").Package("Framework").Func("accept").Content("acceptor closed")
 				return
 			}
-			fmt.Printf("Error: server listener accept connection occurs error: %v\n", acceptError.Error())
+			logger.Error().Package("framework").Package("Framework").Func("accept").Content("acceptor accept connection occurs error: %v", acceptError.Error())
 			continue
 		}
 		f.connChan <- connection
@@ -93,13 +97,13 @@ func (f *Framework) run(connection net.Conn) {
 	l := link.New(connection)
 	d := dispatcher.New(l)
 	f.dispatcherMgr[l.UID()] = d
-	fmt.Printf("Note: create link and dispatcher %v\n", l.UID())
+	logger.Info().Package("framework").Package("Framework").Func("run").Content("create link %v and its dispatcher", l.UID())
 	d.SetHandleMiddleware(f.handleMiddlewareMgr)
-	fmt.Printf("Note: link begin recv goroutine %v\n", l.UID())
+	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin recv goroutine", l.UID())
 	go l.HandleRecv()
-	fmt.Printf("Note: link begin send goroutine %v\n", l.UID())
+	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin send goroutine", l.UID())
 	go l.HandleSend()
-	fmt.Printf("Note: dispatcher begin logic goroutine %v\n", l.UID())
+	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin logic goroutine", l.UID())
 	go d.HandleLogic()
 	if f.runMiddleware != nil {
 		f.runMiddleware.Do(d)
@@ -124,17 +128,31 @@ func (f *Framework) ForRangeDispatcher(handle func(uint64, *dispatcher.Dispatche
 	}
 }
 
+// Exit end acceptor, all link connection recv goroutine
 func (f *Framework) Exit() {
-	fmt.Printf("Note: server close acceptor\n")
+	logger.Info().Package("framework").Package("Framework").Func("Exit").Content("close acceptor")
 	var err error
 	for _, acceptor := range f.acceptorMgr {
 		err = acceptor.Close()
 		if err != nil {
-			fmt.Printf("Error: server close acceptor occurs error: %v\n", err)
+			logger.Error().Package("framework").Package("Framework").Func("Exit").Content("close acceptor occurs error: %v", err.Error())
 		}
 	}
 	// 只需要退出 dispatcher，dispatcher 退出会引起
 	// for _, l := range s.linkMgr {
-	// 	fmt.Printf("Note: server close link %v connection\n", l.UID())
+	// 	fmt.Printf("Note: server close link %v connection", l.UID())
 	// }
+}
+
+func (f *Framework) Hold() {
+	s := make(chan os.Signal, 10)
+	signal.Notify(s, os.Interrupt)
+	<-s
+	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("stop signal")
+	signal.Stop(s)
+	close(s)
+	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("exit framework")
+	f.Exit()
+	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("waitting 5 seconds")
+	time.Sleep(time.Second * 5)
 }

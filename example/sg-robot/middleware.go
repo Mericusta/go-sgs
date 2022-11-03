@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
@@ -36,12 +35,12 @@ func (m *RobotMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := robotHandlerMgr[e.ID()]; handler != nil && has {
 		iRobot, has := m.sgRobot.RobotMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
 		if !has {
-			fmt.Printf("Error: can not find robot by uid %v", ctx.Link().UID())
+			logger.Error().Package("main").Content("can not find robot by uid %v", ctx.Link().UID())
 			return false
 		}
 		robot, ok := iRobot.(*model.Robot)
 		if !ok {
-			fmt.Printf("Error: robot manager uid %v value type is not *Robot\n", ctx.Link().UID())
+			logger.Error().Package("main").Content("robot manager uid %v value type is not *Robot", ctx.Link().UID())
 			return false
 		}
 		handler(NewRobotContext(ctx, robot), e.Data())

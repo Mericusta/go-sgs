@@ -2,13 +2,15 @@ package acceptor
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"time"
+
+	"github.com/Mericusta/go-logger"
 )
 
 type ServerAcceptor struct {
 	net.Listener
+	state AcceptorState
 }
 
 func NewServerAcceptor(network, addr string, tcpKeepAlive time.Duration) IAcceptor {
@@ -21,8 +23,17 @@ func NewServerAcceptor(network, addr string, tcpKeepAlive time.Duration) IAccept
 		listener, listenError = net.Listen(network, addr)
 	}
 	if listener == nil || listenError != nil {
-		fmt.Printf("Error: listen tcp %v occurs error: %v\n", addr, listenError.Error())
+		logger.Error().Package("acceptor").Func("NewServerAcceptor").Content("listen tcp %v occurs error: %v", addr, listenError.Error())
 		return nil
 	}
-	return &ServerAcceptor{Listener: listener}
+	return &ServerAcceptor{Listener: listener, state: LISTENING}
+}
+
+func (a *ServerAcceptor) Close() error {
+	a.state = CLOSED
+	return a.Listener.Close()
+}
+
+func (a *ServerAcceptor) State() AcceptorState {
+	return a.state
 }

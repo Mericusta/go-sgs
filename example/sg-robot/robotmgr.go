@@ -1,9 +1,9 @@
 package main
 
 import (
-	"fmt"
 	"sync"
 
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
@@ -21,9 +21,9 @@ func NewRobotRunMiddleware(wg *sync.WaitGroup) *robotRunMiddleware {
 	return &robotRunMiddleware{wg: wg}
 }
 
-func (rmd *robotRunMiddleware) Do(ctx dispatcher.IContext) bool {
-	fmt.Printf("Note: robot %v dial done\n", ctx.Link().UID())
-	rmd.wg.Done()
+func (rrm *robotRunMiddleware) Do(ctx dispatcher.IContext) bool {
+	logger.Info().Package("main").Content("robot %v dial done", ctx.Link().UID())
+	rrm.wg.Done()
 	return true
 }
 
@@ -53,23 +53,19 @@ func NewSGRobot(count int) *SGRobot {
 	return sgr
 }
 
-func (rm *SGRobot) RobotMgr() *sync.Map {
-	return rm.robotMgr
+func (sgr *SGRobot) RobotMgr() *sync.Map {
+	return sgr.robotMgr
 }
 
-func (rm *SGRobot) Run() {
-	go rm.Framework.Run()
-	rm.dialWaitGroup.Wait()
-	rm.ForRangeDispatcher(func(u uint64, d *dispatcher.Dispatcher) bool {
-		fmt.Printf("Note: robot %v send event %v\n", u, msg.C2SMsgID_Login)
+func (sgr *SGRobot) Run() {
+	go sgr.Framework.Run()
+	sgr.dialWaitGroup.Wait()
+	sgr.ForRangeDispatcher(func(u uint64, d *dispatcher.Dispatcher) bool {
+		logger.Info().Package("main").Content("robot %v send event %v", u, msg.C2SMsgID_Login)
 		d.Send(event.New(
 			protocol.ProtocolID(msg.C2SMsgID_Login),
 			&msg.C2SLoginData{AccountID: u},
 		))
 		return true
 	})
-}
-
-func (rm *SGRobot) Exit() {
-
 }

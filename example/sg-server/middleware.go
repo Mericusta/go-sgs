@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
@@ -36,12 +35,12 @@ func (m *UserMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := userHandlerMgr[e.ID()]; handler != nil && has {
 		iUser, has := m.sgServer.UserMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
 		if !has {
-			fmt.Printf("Error: can not find user by uid %v", ctx.Link().UID())
+			logger.Error().Package("main").Content("can not find user by uid %v", ctx.Link().UID())
 			return false
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			fmt.Printf("Error: server user manager uid %v value type is not *User\n", ctx.Link().UID())
+			logger.Error().Package("main").Content("Error: server user manager uid %v value type is not *User", ctx.Link().UID())
 			return false
 		}
 		handler(NewUserContext(ctx, user), e.Data())

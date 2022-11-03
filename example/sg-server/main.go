@@ -1,11 +1,7 @@
 package main
 
 import (
-	"fmt"
-	"os"
-	"os/signal"
-	"time"
-
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/example/msg"
 )
 
@@ -21,17 +17,9 @@ func main() {
 	sgs := NewSGServer()
 
 	// run server
-	fmt.Printf("Note: SG-Server run\n")
+	logger.Info().Package("main").Content("SG-Server run")
 	go sgs.Run()
 
-	// watch system signal
-	s := make(chan os.Signal, 10)
-	signal.Notify(s, os.Interrupt)
-	<-s
-	fmt.Printf("Note: close signal\n")
-	close(s)
-	fmt.Printf("Note: exit\n")
-	sgs.Exit() // end tcp listener, all link connection recv goroutine
-	fmt.Printf("Note: waitting 5 seconds\n")
-	time.Sleep(time.Second * 5)
+	// hold server
+	sgs.Hold()
 }

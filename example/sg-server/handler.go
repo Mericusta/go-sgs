@@ -1,8 +1,7 @@
 package main
 
 import (
-	"fmt"
-
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/example/msg"
@@ -18,26 +17,36 @@ func RegisterHandler() {
 	serverHandlerMgr[msg.C2SMsgID_Login] = func(ctx IServerContext, p protocol.Protocol) {
 		c2sMsg, ok := p.(*msg.C2SLoginData)
 		if c2sMsg == nil || !ok {
-			fmt.Printf("Error: msg ID %v data %+v not match\n", msg.C2SMsgID_Login, p)
+			logger.Error().Package("main").Content("msg ID %v data %+v not match", msg.C2SMsgID_Login, p)
 			return
 		}
 
 		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Link().UID(), model.NewUser())
 		if exists {
-			fmt.Printf("Warn: server user manager uid %v already exists\n", ctx.Link().UID())
+			logger.Warn().Package("main").Content("server user manager uid %v already exists", ctx.Link().UID())
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			fmt.Printf("Error: server user manager uid %v value type is not *model.User\n", ctx.Link().UID())
+			logger.Error().Package("main").Content("server user manager uid %v value type is not *model.User", ctx.Link().UID())
 			return
 		}
 
-		fmt.Printf("Note: user %v login with counter %v\n", ctx.Link().UID(), user.GetCounter())
+		logger.Info().Package("main").Content("user %v login with counter %v", ctx.Link().UID(), user.GetCounter())
 
 		s2cMsg := &msg.S2CLoginData{
 			User: user,
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
+	}
+	serverHandlerMgr[msg.C2SMsgID_Logout] = func(ctx IServerContext, p protocol.Protocol) {
+		c2sMsg, ok := p.(*msg.C2SLogout)
+		if c2sMsg == nil || !ok {
+			logger.Error().Package("main").Content("msg ID %v data %+v not match", msg.C2SMsgID_Logout, p)
+			return
+		}
+
+		ctx.UserMgr().Delete(ctx.Link().UID())
+		logger.Info().Package("main").Content("user %v logout", ctx.Link().UID())
 	}
 }
 
@@ -50,12 +59,12 @@ func RegisterUserHandler() {
 	userHandlerMgr[msg.C2SMsgID_Business] = func(ctx IUserContext, p protocol.Protocol) {
 		c2sMsg, ok := p.(*msg.C2SBusinessData)
 		if c2sMsg == nil || !ok {
-			fmt.Printf("Error: msg ID %v data %+v not match\n", msg.C2SMsgID_Business, p)
+			logger.Error().Package("main").Content("msg ID %v data %+v not match", msg.C2SMsgID_Business, p)
 			return
 		}
 
 		ctx.User().AddCounter()
-		fmt.Printf("Note: user %v recv business key %v value1 %v value2 %v\n", ctx.Link().UID(), c2sMsg.Key, c2sMsg.Value1, c2sMsg.Value2)
+		logger.Info().Package("main").Content("user %v recv business key %v value1 %v value2 %v", ctx.Link().UID(), c2sMsg.Key, c2sMsg.Value1, c2sMsg.Value2)
 
 		s2cMsg := &msg.S2CBusinessData{
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,

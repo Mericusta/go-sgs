@@ -1,16 +1,14 @@
 package link
 
 import (
-	"context"
-	"fmt"
 	"io"
 	"net"
 	"time"
 
+	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/connector"
 	"github.com/Mericusta/go-sgs/event"
-	"github.com/Mericusta/go-sgs/protocol"
 )
 
 type LINK_STATE int
@@ -60,14 +58,14 @@ func (l *Link) HandleRecv() {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
 			if err == io.EOF {
-				fmt.Printf("Note: link %v tcp socket closed by remote\n", l.uid)
+				logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket closed by remote", l.uid)
 			} else if opError, ok := err.(*net.OpError); ok && opError.Err == net.ErrClosed {
-				fmt.Printf("Note: link %v tcp socket closed by local\n", l.uid)
+				logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket closed by local", l.uid)
 			} else {
-				fmt.Printf("Note: link %v tcp socket read packet occurs error: %v\n", l.uid, err.Error())
+				logger.Error().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket read packet occurs error: %v", l.uid, err.Error())
 				continue
 			}
-			fmt.Printf("Note: link %v close recv channel\n", l.uid)
+			logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v close recv channel", l.uid)
 			close(l.recv)
 			return
 		} else {
@@ -81,15 +79,15 @@ func (l *Link) HandleSend() {
 	for {
 		sendMsg, ok := <-l.send // TODO: connector close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
 		if sendMsg == nil || !ok {
-			fmt.Printf("Error: link %v send goroutine event is nil %v or not ok %v, end send goroutine\n", l.uid, sendMsg == nil, ok)
+			logger.Error().Package("link").Struct("Link").Func("HandleSend").Content("link %v send goroutine event is nil %v or not ok %v, end send goroutine", l.uid, sendMsg == nil, ok)
 			return
 		}
 		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
-			fmt.Printf("Error: link %v send tcp socket packet occurs error: %v", l.uid, err.Error())
+			logger.Error().Package("link").Struct("Link").Func("HandleSend").Content("link %v send tcp socket packet occurs error: %v", l.uid, err.Error())
 			if err == io.EOF {
 				// TODO: connector send error
-				fmt.Printf("Note: link %v tcp socket occurs io.EOF and end send goroutine\n", l.uid)
+				logger.Info().Package("link").Struct("Link").Func("HandleSend").Content("link %v tcp socket occurs io.EOF and end send goroutine", l.uid)
 				return
 			}
 			continue
@@ -97,39 +95,39 @@ func (l *Link) HandleSend() {
 	}
 }
 
-// logic goroutine
-// TODO: handle logic 不一定只由 link.recv 来触发，handle logic 本身是可以由数据驱动的（比如每隔一段时间主动推送消息）
-func (l *Link) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Link, protocol.Protocol)) {
-	for {
-		select {
-		case e, ok := <-l.recv:
-			// close 的时候会触发 e == nil && ok == false，此时代表已关闭，需要 return
-			// 但是结束逻辑会由 context 的 cancel 提前触发，所以此处一般用不到
-			if e == nil || !ok {
-				fmt.Printf("Error: link %v logic goroutine receive event is nil %v or not ok %v\n", l.uid, e == nil, ok)
-				continue
-			}
+// // logic goroutine
+// // TODO: handle logic 不一定只由 link.recv 来触发，handle logic 本身是可以由数据驱动的（比如每隔一段时间主动推送消息）
+// func (l *Link) HandleLogic(ctx context.Context, handlerMap map[protocol.ProtocolID]func(*Link, protocol.Protocol)) {
+// 	for {
+// 		select {
+// 		case e, ok := <-l.recv:
+// 			// close 的时候会触发 e == nil && ok == false，此时代表已关闭，需要 return
+// 			// 但是结束逻辑会由 context 的 cancel 提前触发，所以此处一般用不到
+// 			if e == nil || !ok {
+// 				fmt.Printf("Error: link %v logic goroutine receive event is nil %v or not ok %v", l.uid, e == nil, ok)
+// 				continue
+// 			}
 
-			// TODO: how to get callback without creating callback map for every link ?
-			// - use global value map, multi goroutine read concurrently, also can not write after register
-			// - use sync.Map, but mutex is performance bottle neck
-			callback := handlerMap[e.ID()]
-			if callback == nil {
-				fmt.Printf("Error: event ID %v callback is nil\n", e.ID())
-				continue
-			}
+// 			// TODO: how to get callback without creating callback map for every link ?
+// 			// - use global value map, multi goroutine read concurrently, also can not write after register
+// 			// - use sync.Map, but mutex is performance bottle neck
+// 			callback := handlerMap[e.ID()]
+// 			if callback == nil {
+// 				fmt.Printf("Error: event ID %v callback is nil", e.ID())
+// 				continue
+// 			}
 
-			// TODO: make context
-			callback(l, e.Data())
-		case <-ctx.Done():
-			fmt.Printf("Note: link %v receive context done and end logic goroutine\n", l.uid)
-			l.Exit()
-			goto DONE
-		}
-	}
-DONE:
-	fmt.Printf("Note: link %v logic goroutine done\n", l.uid)
-}
+// 			// TODO: make context
+// 			callback(l, e.Data())
+// 		case <-ctx.Done():
+// 			fmt.Printf("Note: link %v receive context done and end logic goroutine", l.uid)
+// 			l.Exit()
+// 			goto DONE
+// 		}
+// 	}
+// DONE:
+// 	fmt.Printf("Note: link %v logic goroutine done", l.uid)
+// }
 
 // tcp socket
 func (l *Link) Exit() {
