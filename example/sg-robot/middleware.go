@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
+	"github.com/Mericusta/go-sgs/logger"
+	"go.uber.org/zap"
 )
 
 type RobotMgrMiddleware struct {
@@ -35,12 +36,12 @@ func (m *RobotMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := robotHandlerMgr[e.ID()]; handler != nil && has {
 		iRobot, has := m.sgRobot.RobotMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
 		if !has {
-			logger.Error().Package("main").Content("can not find robot by uid %v", ctx.Link().UID())
+			logger.Logger().Error("can not find robot by link", zap.Uint64("link", ctx.Link().UID()))
 			return false
 		}
 		robot, ok := iRobot.(*model.Robot)
 		if !ok {
-			logger.Error().Package("main").Content("robot manager uid %v value type is not *Robot", ctx.Link().UID())
+			logger.Logger().Error("robot manager link value type is not *Robot", zap.Uint64("link", ctx.Link().UID()))
 			return false
 		}
 		handler(NewRobotContext(ctx, robot), e.Data())

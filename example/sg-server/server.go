@@ -18,9 +18,10 @@ func NewSGServer() *SGServer {
 		Framework: framework.New(),
 		userMgr:   &sync.Map{},
 	}
-	sgs.AppendAcceptor(acceptor.NewServerAcceptor(
+	sgsAcceptor := acceptor.NewServerAcceptor(
 		"tcp", config.DefaultServerAddress, config.TcpKeepAlive,
-	))
+	)
+	sgs.AppendAcceptor(sgsAcceptor)
 	sgs.AppendHandleMiddleware(
 		NewServerMiddleware(sgs),
 		NewUserMiddleware(sgs),

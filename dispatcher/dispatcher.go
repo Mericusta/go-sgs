@@ -1,11 +1,12 @@
 package dispatcher
 
 import (
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
+	"go.uber.org/zap"
 )
 
 type FrameworkHandler func(IContext, protocol.Protocol)
@@ -38,21 +39,22 @@ func (d *Dispatcher) SetHandleMiddleware(hmdMgr []HandleMiddleware) {
 }
 
 func (d *Dispatcher) HandleLogic() {
+	logger.Logger().Info("begin logic goroutine", zap.Uint64("link", d.Link().UID()))
 LOOP:
 	for {
 		select {
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
 			// 本地主动断开
 			if !ok {
-				logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v event channel closed", d.Link().UID())
-				d.Link().Exit() // 关闭 connector，退出发送协程
+				logger.Logger().Info("event channel closed", zap.Uint64("link", d.Link().UID()))
+				// d.Link().Exit() // 关闭 connector，退出发送协程
 				// 关闭 connector 会导致接收协程退出
 				break LOOP
 				// TODO: 是否应该处理 recv 剩余的数据？
 			}
 
 			// 发送逻辑
-			logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v handle send logic, event %+v", d.Link().UID(), e)
+			logger.Logger().Info("handle send event", zap.Uint64("link", d.Link().UID()), zap.Any("event", e))
 			// if d.handleIntercept(e) {
 			// 	handler := d.handlerMgr[e.ID()]
 			// 	if handler == nil {
@@ -68,25 +70,25 @@ LOOP:
 			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connector（重复关闭）
 			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
 			if !ok {
-				logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v receive channel closed", d.Link().UID())
-				d.Link().Exit()       // 关闭 connector，退出发送协程
+				logger.Logger().Info("receive channel closed", zap.Uint64("link", d.Link().UID()))
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程
 				// TODO: 是否需要处理 eventChannel 中剩余的内容？
 			}
 
 			// 接收逻辑
-			logger.Info().Package("dispatcher").Func("HandleLogic").Content("dispatcher link %v handle recv logic, event %+v", d.Link().UID(), e)
+			logger.Logger().Info("handle recv event", zap.Uint64("link", d.Link().UID()), zap.Any("event", e))
 			if d.handleIntercept(e) {
 				handler := d.handlerMgr[e.ID()]
 				if handler == nil {
-					logger.Error().Package("dispatcher").Func("HandleLogic").Content("dispatcher event ID %v handler is nil", e.ID())
+					logger.Logger().Error("dispatcher event ID handler is nil", zap.Uint32("ID", uint32(e.ID())))
 					continue
 				}
 				handler(d, e.Data())
 			}
 		}
 	}
+	logger.Logger().Info("end logic goroutine", zap.Uint64("link", d.Link().UID()))
 }
 
 func (d *Dispatcher) handleIntercept(e *event.Event) bool {

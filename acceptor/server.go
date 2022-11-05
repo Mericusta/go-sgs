@@ -5,7 +5,8 @@ import (
 	"net"
 	"time"
 
-	"github.com/Mericusta/go-logger"
+	"github.com/Mericusta/go-sgs/logger"
+	"go.uber.org/zap"
 )
 
 type ServerAcceptor struct {
@@ -23,7 +24,7 @@ func NewServerAcceptor(network, addr string, tcpKeepAlive time.Duration) IAccept
 		listener, listenError = net.Listen(network, addr)
 	}
 	if listener == nil || listenError != nil {
-		logger.Error().Package("acceptor").Func("NewServerAcceptor").Content("listen tcp %v occurs error: %v", addr, listenError.Error())
+		logger.Logger().Error("listen tcp addr occurs error", zap.String("addr", addr), zap.Error(listenError))
 		return nil
 	}
 	return &ServerAcceptor{Listener: listener, state: LISTENING}

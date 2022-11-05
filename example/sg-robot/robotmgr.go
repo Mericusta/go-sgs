@@ -3,14 +3,15 @@ package main
 import (
 	"sync"
 
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/msg"
 	"github.com/Mericusta/go-sgs/framework"
+	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
+	"go.uber.org/zap"
 )
 
 type robotRunMiddleware struct {
@@ -22,7 +23,7 @@ func NewRobotRunMiddleware(wg *sync.WaitGroup) *robotRunMiddleware {
 }
 
 func (rrm *robotRunMiddleware) Do(ctx dispatcher.IContext) bool {
-	logger.Info().Package("main").Content("robot %v dial done", ctx.Link().UID())
+	logger.Logger().Info("robot dial done", zap.Uint64("link", ctx.Link().UID()))
 	rrm.wg.Done()
 	return true
 }
@@ -61,7 +62,7 @@ func (sgr *SGRobot) Run() {
 	go sgr.Framework.Run()
 	sgr.dialWaitGroup.Wait()
 	sgr.ForRangeDispatcher(func(u uint64, d *dispatcher.Dispatcher) bool {
-		logger.Info().Package("main").Content("robot %v send event %v", u, msg.C2SMsgID_Login)
+		logger.Logger().Info("robot send event", zap.Uint64("link", u), zap.Int("ID", msg.C2SMsgID_Login))
 		d.Send(event.New(
 			protocol.ProtocolID(msg.C2SMsgID_Login),
 			&msg.C2SLoginData{AccountID: u},

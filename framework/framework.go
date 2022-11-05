@@ -6,12 +6,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
 	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
+	"go.uber.org/zap"
 )
 
 type RunMiddleware interface {
@@ -52,7 +53,7 @@ func (f *Framework) Run() {
 	case acceptorCount == 1:
 		f.singleRun()
 	default:
-		logger.Warn().Package("framework").Content("not have any acceptor")
+		logger.Logger().Warn("framework not have any acceptor")
 	}
 }
 
@@ -62,10 +63,10 @@ func (f *Framework) singleRun() {
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Info().Package("framework").Package("Framework").Func("singleRun").Content("acceptor closed")
+				logger.Logger().Info("framework acceptor closed")
 				return
 			}
-			logger.Error().Package("framework").Package("Framework").Func("singleRun").Content("acceptor accept connection occurs error: %v", acceptError.Error())
+			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.run(connection)
@@ -77,10 +78,10 @@ func (f *Framework) accept(a acceptor.IAcceptor) {
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Info().Package("framework").Package("Framework").Func("accept").Content("acceptor closed")
+				logger.Logger().Info("framework acceptor closed")
 				return
 			}
-			logger.Error().Package("framework").Package("Framework").Func("accept").Content("acceptor accept connection occurs error: %v", acceptError.Error())
+			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.connChan <- connection
@@ -97,13 +98,10 @@ func (f *Framework) run(connection net.Conn) {
 	l := link.New(connection)
 	d := dispatcher.New(l)
 	f.dispatcherMgr[l.UID()] = d
-	logger.Info().Package("framework").Package("Framework").Func("run").Content("create link %v and its dispatcher", l.UID())
+	logger.Logger().Info("create link and its dispatcher", zap.Uint64("link", l.UID()))
 	d.SetHandleMiddleware(f.handleMiddlewareMgr)
-	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin recv goroutine", l.UID())
 	go l.HandleRecv()
-	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin send goroutine", l.UID())
 	go l.HandleSend()
-	logger.Info().Package("framework").Package("Framework").Func("run").Content("link %v begin logic goroutine", l.UID())
 	go d.HandleLogic()
 	if f.runMiddleware != nil {
 		f.runMiddleware.Do(d)
@@ -130,12 +128,12 @@ func (f *Framework) ForRangeDispatcher(handle func(uint64, *dispatcher.Dispatche
 
 // Exit end acceptor, all link connection recv goroutine
 func (f *Framework) Exit() {
-	logger.Info().Package("framework").Package("Framework").Func("Exit").Content("close acceptor")
+	logger.Logger().Info("close acceptor")
 	var err error
 	for _, acceptor := range f.acceptorMgr {
 		err = acceptor.Close()
 		if err != nil {
-			logger.Error().Package("framework").Package("Framework").Func("Exit").Content("close acceptor occurs error: %v", err.Error())
+			logger.Logger().Error("close acceptor occurs error", zap.Error(err))
 		}
 	}
 	// 只需要退出 dispatcher，dispatcher 退出会引起
@@ -148,11 +146,11 @@ func (f *Framework) Hold() {
 	s := make(chan os.Signal, 10)
 	signal.Notify(s, os.Interrupt)
 	<-s
-	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("stop signal")
+	logger.Logger().Info("stop signal")
 	signal.Stop(s)
 	close(s)
-	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("exit framework")
+	logger.Logger().Info("exit framework")
 	f.Exit()
-	logger.Info().Package("framework").Package("Framework").Func("Hold").Content("waitting 5 seconds")
+	logger.Logger().Info("waitting 5 seconds")
 	time.Sleep(time.Second * 5)
 }

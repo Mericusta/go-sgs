@@ -5,10 +5,11 @@ import (
 	"net"
 	"time"
 
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/connector"
 	"github.com/Mericusta/go-sgs/event"
+	"github.com/Mericusta/go-sgs/logger"
+	"go.uber.org/zap"
 )
 
 type LINK_STATE int
@@ -54,19 +55,21 @@ func (l *Link) Recv() <-chan *event.Event {
 
 // recv goroutine
 func (l *Link) HandleRecv() {
+	logger.Logger().Info("begin recv goroutine", zap.Uint64("link", l.UID()))
 	for {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
 			if err == io.EOF {
-				logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket closed by remote", l.uid)
+				logger.Logger().Info("tcp socket closed by remote", zap.Uint64("link", l.UID()))
 			} else if opError, ok := err.(*net.OpError); ok && opError.Err == net.ErrClosed {
-				logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket closed by local", l.uid)
+				logger.Logger().Info("tcp socket closed by local")
 			} else {
-				logger.Error().Package("link").Struct("Link").Func("HandleRecv").Content("link %v tcp socket read packet occurs error: %v", l.uid, err.Error())
+				logger.Logger().Error("tcp socket read packet occurs error", zap.Uint64("link", l.UID()), zap.Error(err))
 				continue
 			}
-			logger.Info().Package("link").Struct("Link").Func("HandleRecv").Content("link %v close recv channel", l.uid)
+			logger.Logger().Info("close recv channel", zap.Uint64("link", l.UID()))
 			close(l.recv)
+			logger.Logger().Info("end recv goroutine", zap.Uint64("link", l.UID()))
 			return
 		} else {
 			l.recv <- event.New(protocolID, protocolData)
@@ -76,18 +79,19 @@ func (l *Link) HandleRecv() {
 
 // send goroutine
 func (l *Link) HandleSend() {
+	logger.Logger().Info("begin send goroutine", zap.Uint64("link", l.UID()))
 	for {
 		sendMsg, ok := <-l.send // TODO: connector close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
 		if sendMsg == nil || !ok {
-			logger.Error().Package("link").Struct("Link").Func("HandleSend").Content("link %v send goroutine event is nil %v or not ok %v, end send goroutine", l.uid, sendMsg == nil, ok)
+			logger.Logger().Error("send goroutine event is nil or not ok, end send goroutine", zap.Uint64("link", l.UID()), zap.Bool("isNil", sendMsg == nil), zap.Bool("ok", ok))
 			return
 		}
 		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
-			logger.Error().Package("link").Struct("Link").Func("HandleSend").Content("link %v send tcp socket packet occurs error: %v", l.uid, err.Error())
+			logger.Logger().Error("send tcp socket packet occurs error", zap.Uint64("link", l.UID()), zap.Error(err))
 			if err == io.EOF {
 				// TODO: connector send error
-				logger.Info().Package("link").Struct("Link").Func("HandleSend").Content("link %v tcp socket occurs io.EOF and end send goroutine", l.uid)
+				logger.Logger().Info("tcp socket occurs io.EOF and end send goroutine", zap.Uint64("link", l.UID()))
 				return
 			}
 			continue

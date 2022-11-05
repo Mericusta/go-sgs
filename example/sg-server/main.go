@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/example/msg"
+	"github.com/Mericusta/go-sgs/logger"
 )
 
 func main() {
@@ -17,7 +17,7 @@ func main() {
 	sgs := NewSGServer()
 
 	// run server
-	logger.Info().Package("main").Content("SG-Server run")
+	logger.Logger().Info("SG-Server run")
 	go sgs.Run()
 
 	// hold server

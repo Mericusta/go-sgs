@@ -4,11 +4,12 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/Mericusta/go-logger"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/example/model"
 	"github.com/Mericusta/go-sgs/example/msg"
+	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
+	"go.uber.org/zap"
 )
 
 type RobotMgrHandler func(IRobotMgrContext, protocol.Protocol)
@@ -20,15 +21,16 @@ func RegisterRobotMgrHandler() {
 	robotMgrHandlerMrg[msg.S2CMsgID_Login] = func(ctx IRobotMgrContext, p protocol.Protocol) {
 		s2cMsg, ok := p.(*msg.S2CLoginData)
 		if s2cMsg == nil || !ok {
-			logger.Error().Package("main").Content("msg ID %v data %+v not match", msg.C2SMsgID_Login, p)
+			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
 			return
 		}
 
 		robot := model.NewRobot(ctx.Link().UID())
 		robot.SetCounter(s2cMsg.User.GetCounter())
+		robot.TickBegin()
 		ctx.RobotMgr().Store(ctx.Link().UID(), robot)
 
-		logger.Info().Package("main").Content("robot %v login with init counter %v", robot.ID(), s2cMsg.User.GetCounter())
+		logger.Logger().Info("robot login with init counter", zap.Uint64("ID", robot.ID()), zap.Int("counter", s2cMsg.User.GetCounter()))
 
 		key := int(time.Now().UnixNano())
 		v1, v2 := rand.Intn(1024), rand.Intn(1024)
@@ -37,7 +39,7 @@ func RegisterRobotMgrHandler() {
 			Key: key, Value1: v1, Value2: v2,
 		}
 		ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
-		logger.Info().Package("main").Content("robot %v send business key %v value1 %v value2 %v, expect %v", robot.ID(), key, v1, v2, v1+v2)
+		logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", robot.ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 	}
 }
 
@@ -50,17 +52,17 @@ func RegisterRobotHandler() {
 	robotHandlerMgr[msg.S2CMsgID_Business] = func(ctx IRobotContext, p protocol.Protocol) {
 		s2cMsg, ok := p.(*msg.S2CBusinessData)
 		if s2cMsg == nil || !ok {
-			logger.Error().Package("main").Content("msg ID %v data %+v not match", msg.S2CMsgID_Business, p)
+			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.S2CMsgID_Business), zap.Any("data", p))
 			return
 		}
 
 		if v, has := ctx.Robot().GetExpect(s2cMsg.Key); !has || v != s2cMsg.Result {
-			logger.Error().Package("main").Content("robot %v S2CMsgID_Business key %v result %v not match expect %v", ctx.Robot().ID(), s2cMsg.Key, s2cMsg.Result, v)
+			logger.Logger().Error("robot S2CMsgID_Business key result not match expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result), zap.Int("expect", v))
 			return
 		}
 
 		ctx.Robot().DelExpect(s2cMsg.Key)
-		logger.Info().Package("main").Content("robot %v recv business key %v result %v, then delete expect", ctx.Robot().ID(), s2cMsg.Key, s2cMsg.Result)
+		logger.Logger().Info("robot recv business key result, then delete expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result))
 
 		c2sMsg := &msg.C2SLogout{}
 		ctx.Link().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
