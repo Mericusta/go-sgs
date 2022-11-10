@@ -26,11 +26,9 @@ func RegisterRobotMgrHandler() {
 		}
 
 		robot := model.NewRobot(ctx.Link().UID())
-		robot.SetCounter(s2cMsg.User.GetCounter())
-		robot.TickBegin()
 		ctx.RobotMgr().Store(ctx.Link().UID(), robot)
 
-		logger.Logger().Info("robot login with init counter", zap.Uint64("ID", robot.ID()), zap.Int("counter", s2cMsg.User.GetCounter()))
+		logger.Logger().Info("robot login", zap.Uint64("ID", robot.ID()))
 
 		key := int(time.Now().UnixNano())
 		v1, v2 := rand.Intn(1024), rand.Intn(1024)
@@ -64,21 +62,25 @@ func RegisterRobotHandler() {
 		ctx.Robot().DelExpect(s2cMsg.Key)
 		logger.Logger().Info("robot recv business key result, then delete expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result))
 
-		time.Sleep(time.Second * 10)
+		time.Sleep(time.Second)
 
-		// // condition: client exit actively
-		// c2sMsg := &msg.C2SLogout{}
-		// ctx.Link().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
-		// logger.Logger().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
+		if ctx.Robot().Counter() < requestCount {
+			ctx.Robot().CounterIncrease()
 
-		// condition: client/server exit passively
-		key := int(time.Now().UnixNano())
-		v1, v2 := rand.Intn(1024), rand.Intn(1024)
-		ctx.Robot().AddExpect(key, v1+v2)
-		c2sMsg := &msg.C2SBusinessData{
-			Key: key, Value1: v1, Value2: v2,
+			// condition: client/server exit passively
+			key := int(time.Now().UnixNano())
+			v1, v2 := rand.Intn(1024), rand.Intn(1024)
+			ctx.Robot().AddExpect(key, v1+v2)
+			c2sMsg := &msg.C2SBusinessData{
+				Key: key, Value1: v1, Value2: v2,
+			}
+			ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
+			logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
+		} else {
+			// condition: client exit actively
+			c2sMsg := &msg.C2SLogout{}
+			ctx.Link().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
+			logger.Logger().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
 		}
-		ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
-		logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 	}
 }

@@ -6,14 +6,16 @@ import (
 )
 
 type ClientAcceptor struct {
+	*BaseAcceptor
 	network         string
 	addr            string
 	tcpDialOvertime time.Duration
 	state           AcceptorState
 }
 
-func NewClientAcceptor(network, addr string, tcpDialOvertime time.Duration) IAcceptor {
+func NewClientAcceptor(id int, network, addr string, tcpDialOvertime time.Duration) IAcceptor {
 	return &ClientAcceptor{
+		BaseAcceptor:    NewBaseAcceptor(id),
 		network:         network,
 		addr:            addr,
 		tcpDialOvertime: tcpDialOvertime,

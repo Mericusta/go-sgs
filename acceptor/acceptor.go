@@ -11,7 +11,20 @@ const (
 )
 
 type IAcceptor interface {
+	ID() int
 	Accept() (net.Conn, error)
 	Close() error
 	State() AcceptorState // TODO: 有并发问题
+}
+
+type BaseAcceptor struct {
+	id int
+}
+
+func NewBaseAcceptor(id int) *BaseAcceptor {
+	return &BaseAcceptor{id: id}
+}
+
+func (a *BaseAcceptor) ID() int {
+	return a.id
 }

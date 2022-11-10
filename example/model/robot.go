@@ -31,8 +31,12 @@ func (r *Robot) DelExpect(k int) {
 	delete(r.expect, k)
 }
 
-func (r *Robot) SetCounter(c int) {
-	r.counter = c
+func (r *Robot) CounterIncrease() {
+	r.counter++
+}
+
+func (r *Robot) Counter() int {
+	return r.counter
 }
 
 func (r *Robot) TickBegin() {

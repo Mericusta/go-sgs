@@ -42,7 +42,7 @@ func NewSGRobot(count int) *SGRobot {
 	}
 	for index := 0; index != count; index++ {
 		sgr.AppendAcceptor(acceptor.NewClientAcceptor(
-			"tcp", config.DefaultServerAddress, config.TcpDialOvertime,
+			index, "tcp", config.DefaultServerAddress, config.TcpDialOvertime,
 		))
 	}
 	sgr.AppendHandleMiddleware(

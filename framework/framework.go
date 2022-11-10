@@ -59,33 +59,37 @@ func (f *Framework) Run() {
 
 func (f *Framework) singleRun() {
 	a := f.acceptorMgr[0]
+LOOP:
 	for a.State() == acceptor.LISTENING {
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Logger().Info("framework acceptor closed")
-				return
+				logger.Logger().Info("framework single acceptor closed")
+				break LOOP
 			}
 			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.run(connection)
 	}
+	logger.Logger().Info("single acceptor end accept-goroutine")
 }
 
 func (f *Framework) accept(a acceptor.IAcceptor) {
+LOOP:
 	for a.State() == acceptor.LISTENING {
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Logger().Info("framework acceptor closed")
-				return
+				logger.Logger().Info("framework acceptor closed", zap.Int("acceptor", a.ID()))
+				break LOOP
 			}
 			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.connChan <- connection
 	}
+	logger.Logger().Info("acceptor end accept-goroutine", zap.Int("acceptor", a.ID()))
 }
 
 func (f *Framework) recvConn() {

@@ -5,9 +5,10 @@ import (
 	"github.com/Mericusta/go-sgs/logger"
 )
 
-func main() {
-	const robotCount int = 1
+const robotCount int = 1000
+const requestCount int = 10
 
+func main() {
 	// register msg ID protocol
 	msg.Init()
 

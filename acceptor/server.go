@@ -11,6 +11,7 @@ import (
 
 type ServerAcceptor struct {
 	net.Listener
+	*BaseAcceptor
 	state AcceptorState
 }
 
@@ -27,7 +28,11 @@ func NewServerAcceptor(network, addr string, tcpKeepAlive time.Duration) IAccept
 		logger.Logger().Error("listen tcp addr occurs error", zap.String("addr", addr), zap.Error(listenError))
 		return nil
 	}
-	return &ServerAcceptor{Listener: listener, state: LISTENING}
+	return &ServerAcceptor{
+		Listener:     listener,
+		BaseAcceptor: NewBaseAcceptor(0),
+		state:        LISTENING,
+	}
 }
 
 func (a *ServerAcceptor) Close() error {
