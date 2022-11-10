@@ -9,7 +9,7 @@ import (
 type Connector interface {
 	SendMsg(protocol.ProtocolID, protocol.Protocol) error
 	RecvMsg() (protocol.ProtocolID, protocol.Protocol, error)
-	Close()
+	Close() error
 }
 
 type BaseConnector struct {
@@ -20,8 +20,8 @@ func (c *BaseConnector) Address() string {
 	return c.Connection.RemoteAddr().String()
 }
 
-func (c *BaseConnector) Close() {
-	c.Connection.Close()
+func (c *BaseConnector) Close() error {
+	return c.Connection.Close()
 }
 
 func New(connection net.Conn) Connector {

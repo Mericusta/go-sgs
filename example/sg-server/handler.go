@@ -73,5 +73,9 @@ func RegisterUserHandler() {
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
+
+		// time.Sleep(time.Second * 10)
+		// // condition: server exit actively
+		// ctx.Link().Exit()
 	}
 }

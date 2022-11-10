@@ -22,7 +22,7 @@ const (
 
 type Link struct {
 	uid       uint64
-	state     LINK_STATE
+	state     LINK_STATE // TODO: 有并发问题
 	connector connector.Connector
 	recv      chan *event.Event // TODO: 不要传递小对象
 	send      chan *event.Event // TODO: 不要传递小对象
@@ -44,8 +44,11 @@ func (l *Link) UID() uint64 {
 
 func (l *Link) Send(m *event.Event) {
 	if m == nil || l.state != LINK_CONNECTED {
+		logger.Logger().Debug("link send nil or state is not LINK_CONNECTED", zap.Uint64("link", l.UID()), zap.Bool("isNil", m == nil), zap.Int("state", int(l.state)))
 		return
 	}
+	// TODO: 通过长度判断一下是否可以 send，以免在 send-channel 缓存满了并且被关闭之后阻塞在这里
+	// logger.Logger().Debug("link send-channel length", zap.Uint64("link", l.UID()), zap.Int("length", len(l.send)))
 	l.send <- m
 }
 
@@ -56,47 +59,48 @@ func (l *Link) Recv() <-chan *event.Event {
 // recv goroutine
 func (l *Link) HandleRecv() {
 	logger.Logger().Info("begin recv goroutine", zap.Uint64("link", l.UID()))
+LOOP:
 	for {
 		protocolID, protocolData, err := l.connector.RecvMsg()
 		if err != nil {
 			if err == io.EOF {
 				logger.Logger().Info("tcp socket closed by remote", zap.Uint64("link", l.UID()))
 			} else if opError, ok := err.(*net.OpError); ok && opError.Err == net.ErrClosed {
-				logger.Logger().Info("tcp socket closed by local")
+				logger.Logger().Info("tcp socket closed by local", zap.Uint64("link", l.UID()))
 			} else {
 				logger.Logger().Error("tcp socket read packet occurs error", zap.Uint64("link", l.UID()), zap.Error(err))
-				continue
 			}
-			logger.Logger().Info("close recv channel", zap.Uint64("link", l.UID()))
+			logger.Logger().Info("close recv-channel", zap.Uint64("link", l.UID()))
 			close(l.recv)
-			logger.Logger().Info("end recv goroutine", zap.Uint64("link", l.UID()))
-			return
+			break LOOP
 		} else {
 			l.recv <- event.New(protocolID, protocolData)
 		}
 	}
+	logger.Logger().Info("end recv-goroutine", zap.Uint64("link", l.UID()))
 }
 
 // send goroutine
 func (l *Link) HandleSend() {
-	logger.Logger().Info("begin send goroutine", zap.Uint64("link", l.UID()))
+	logger.Logger().Info("begin send-goroutine", zap.Uint64("link", l.UID()))
+LOOP:
 	for {
-		sendMsg, ok := <-l.send // TODO: connector close 的时候会触发 event == nil && ok == false，此时代表已关闭，需要 return
-		if sendMsg == nil || !ok {
-			logger.Logger().Error("send goroutine event is nil or not ok, end send goroutine", zap.Uint64("link", l.UID()), zap.Bool("isNil", sendMsg == nil), zap.Bool("ok", ok))
-			return
+		sendMsg, ok := <-l.send
+		if !ok {
+			logger.Logger().Info("send-channel closed", zap.Uint64("link", l.UID()))
+			break LOOP
 		}
 		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
 			logger.Logger().Error("send tcp socket packet occurs error", zap.Uint64("link", l.UID()), zap.Error(err))
 			if err == io.EOF {
-				// TODO: connector send error
-				logger.Logger().Info("tcp socket occurs io.EOF and end send goroutine", zap.Uint64("link", l.UID()))
-				return
+				logger.Logger().Info("tcp socket occurs io.EOF", zap.Uint64("link", l.UID()))
+				break LOOP
 			}
 			continue
 		}
 	}
+	logger.Logger().Info("end send-goroutine", zap.Uint64("link", l.UID()))
 }
 
 // // logic goroutine
@@ -133,12 +137,22 @@ func (l *Link) HandleSend() {
 // 	fmt.Printf("Note: link %v logic goroutine done", l.uid)
 // }
 
-// tcp socket
+// exit tcp socket
 func (l *Link) Exit() {
+	if l.state == LINK_CLOSED {
+		logger.Logger().Info("link already exit", zap.Uint64("link", l.uid))
+		return
+	}
+	logger.Logger().Info("link exit", zap.Uint64("link", l.uid))
 	// 标记状态，防止逻辑协程在 handler 中可能会往已关闭的 channel 中发送数据从而导致阻塞
 	l.state = LINK_CLOSED
 	// 主动断开 tcp socket
-	l.connector.Close()
+	logger.Logger().Info("close connector", zap.Uint64("link", l.uid))
+	err := l.connector.Close()
+	if err != nil {
+		logger.Logger().Warn("close connector occurs error", zap.Error(err))
+	}
 	// 退出 send 协程
+	logger.Logger().Info("close send-channel", zap.Uint64("link", l.uid))
 	close(l.send)
 }

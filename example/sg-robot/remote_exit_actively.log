@@ -1,0 +1,32 @@
+2022-11-10T17:27:13.538+0800	INFO	sg-robot/main.go:22	SG-Robot run
+2022-11-10T17:27:13.539+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668072433539639208}
+2022-11-10T17:27:13.539+0800	INFO	sg-robot/robotmgr.go:26	robot dial done	{"link": 1668072433539639208}
+2022-11-10T17:27:13.539+0800	INFO	sg-robot/robotmgr.go:65	robot send event	{"link": 1668072433539639208, "ID": 1}
+2022-11-10T17:27:13.539+0800	INFO	link/link.go:60	begin recv goroutine	{"link": 1668072433539639208}
+2022-11-10T17:27:13.540+0800	INFO	link/link.go:84	begin send-goroutine	{"link": 1668072433539639208}
+2022-11-10T17:27:13.540+0800	INFO	dispatcher/dispatcher.go:42	begin logic-goroutine	{"link": 1668072433539639208}
+2022-11-10T17:27:13.540+0800	INFO	dispatcher/dispatcher.go:57	handle send-event	{"link": 1668072433539639208, "event": {}}
+2022-11-10T17:27:13.540+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668072433539639208, "length": 0}
+2022-11-10T17:27:13.541+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668072433539639208, "event": {}}
+2022-11-10T17:27:13.541+0800	INFO	sg-robot/handler.go:33	robot login with init counter	{"ID": 1668072433539639208, "counter": 545}
+2022-11-10T17:27:13.541+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668072433539639208, "length": 0}
+2022-11-10T17:27:13.541+0800	INFO	sg-robot/handler.go:42	robot send business key value1 value2 wait expect	{"ID": 1668072433539639208, "key": 1668072433541715623, "value1": 545, "value2": 527, "expect": 1072}
+2022-11-10T17:27:13.542+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668072433539639208, "event": {}}
+2022-11-10T17:27:13.542+0800	INFO	sg-robot/handler.go:65	robot recv business key result, then delete expect	{"ID": 1668072433539639208, "key": 1668072433541715623, "result": 1072}
+2022-11-10T17:27:23.546+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668072433539639208, "length": 0}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:66	tcp socket closed by remote	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:72	close recv-channel	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:79	end recv-goroutine	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	sg-robot/handler.go:82	robot send business key value1 value2 wait expect	{"ID": 1668072433539639208, "key": 1668072443546844961, "value1": 455, "value2": 187, "expect": 642}
+2022-11-10T17:27:23.547+0800	INFO	dispatcher/dispatcher.go:73	recv-channel closed	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:145	link exit	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:149	close connector	{"link": 1668072433539639208}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:155	close send-channel	{"link": 1668072433539639208}
+2022-11-10T17:27:23.548+0800	INFO	dispatcher/dispatcher.go:75	close event-channel	{"link": 1668072433539639208}
+2022-11-10T17:27:23.548+0800	INFO	dispatcher/dispatcher.go:93	end logic-goroutine	{"link": 1668072433539639208}
+2022-11-10T17:27:23.548+0800	INFO	link/link.go:89	send-channel closed	{"link": 1668072433539639208}
+2022-11-10T17:27:23.548+0800	INFO	link/link.go:102	end send-goroutine	{"link": 1668072433539639208}
+2022-11-10T17:58:47.855+0800	INFO	framework/framework.go:149	stop signal
+2022-11-10T17:58:47.857+0800	INFO	framework/framework.go:152	exit framework
+2022-11-10T17:58:47.857+0800	INFO	framework/framework.go:131	close acceptor
+2022-11-10T17:58:47.857+0800	INFO	framework/framework.go:154	waitting 5 seconds

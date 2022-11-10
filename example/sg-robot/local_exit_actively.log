@@ -1,0 +1,24 @@
+2022-11-10T10:09:40.288+0800	INFO	sg-robot/main.go:22	SG-Robot run
+2022-11-10T10:09:40.292+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668046180292746096}
+2022-11-10T10:09:40.293+0800	INFO	sg-robot/robotmgr.go:26	robot dial done	{"link": 1668046180292746096}
+2022-11-10T10:09:40.293+0800	INFO	sg-robot/robotmgr.go:65	robot send event	{"link": 1668046180292746096, "ID": 1}
+2022-11-10T10:09:40.293+0800	INFO	link/link.go:58	begin recv goroutine	{"link": 1668046180292746096}
+2022-11-10T10:09:40.294+0800	INFO	link/link.go:82	begin send goroutine	{"link": 1668046180292746096}
+2022-11-10T10:09:40.294+0800	INFO	dispatcher/dispatcher.go:42	begin logic goroutine	{"link": 1668046180292746096}
+2022-11-10T10:09:40.294+0800	INFO	dispatcher/dispatcher.go:57	handle send event	{"link": 1668046180292746096, "event": {}}
+2022-11-10T10:09:40.297+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668046180292746096, "event": {}}
+2022-11-10T10:09:40.297+0800	INFO	sg-robot/handler.go:33	robot login with init counter	{"ID": 1668046180292746096, "counter": 545}
+2022-11-10T10:09:40.297+0800	INFO	sg-robot/handler.go:42	robot send business key value1 value2 wait expect	{"ID": 1668046180292746096, "key": 1668046180297738547, "value1": 545, "value2": 527, "expect": 1072}
+2022-11-10T10:09:40.299+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668046180292746096, "event": {}}
+2022-11-10T10:09:40.299+0800	INFO	sg-robot/handler.go:65	robot recv business key result, then delete expect	{"ID": 1668046180292746096, "key": 1668046180297738547, "result": 1072}
+2022-11-10T10:09:40.299+0800	INFO	link/link.go:63	tcp socket closed by remote	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	link/link.go:70	close recv channel	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	link/link.go:72	end recv goroutine	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	dispatcher/dispatcher.go:73	receive channel closed	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	link/link.go:142	link exit	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	dispatcher/dispatcher.go:92	end logic goroutine	{"link": 1668046180292746096}
+2022-11-10T10:09:40.300+0800	INFO	link/link.go:86	send goroutine event is nil or not ok, end send goroutine	{"link": 1668046180292746096, "isNil": true, "ok": false}
+2022-11-10T10:10:34.600+0800	INFO	framework/framework.go:149	stop signal
+2022-11-10T10:10:34.601+0800	INFO	framework/framework.go:152	exit framework
+2022-11-10T10:10:34.601+0800	INFO	framework/framework.go:131	close acceptor
+2022-11-10T10:10:34.601+0800	INFO	framework/framework.go:154	waitting 5 seconds

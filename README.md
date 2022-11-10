@@ -38,7 +38,7 @@
 - resource model 4: `1 - 1/l - 1/m - 1/n`
     - need multi kinds `dispatcher`, logic dispatcher, send dispatcher, recv dispatcher
     - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
-    - Note: expect golang feature: recv channel without blocking, like try lock -> try recv channel
+    - Note: expect golang feature: recv-channel without blocking, like try lock -> try recv-channel
 
 #### Call chain level
 
@@ -52,6 +52,9 @@
 level 4~5 是应用层
 level 1~3 是框架层
 level 0 是系统层
+
+- 框架层和应用层要有互相控住的方式，框架层 tcp socket 断开之后要控制应用层退出，应用层退出之后要断开框架层 tcp socket
+- TODO: 框架层和应用层的退出应当有序
 
 #### Recv Goroutine
 
@@ -206,17 +209,17 @@ level 0 是系统层
     - os: tcp socket -> recv goroutine: unpack []byte, unmarshal -> logic goroutine: handler
     ```
     ┌──────────────┬────────────────────────────────────┬─────────────────────┬─────────────────────────────┬──────────────────────────┐
-    │      OS      │     recv goroutine: connector      │   recv goroutine    │ logic goroutine: dispatcher │ logic goroutine: handler │
+    │      OS      │     recv-goroutine: connector      │   recv-goroutine    │ logic-goroutine: dispatcher │ logic-goroutine: handler │
     ├──────────────┼───────────────┬────────────────────┼─────────────────────┼─────────────────────────────┼──────────────────────────┤
-    │  TCP Socket  │ unpack []byte │ unmarshal protocol │ recv channel <- Msg │     Msg <- recv channel     │        handle Msg        │
+    │  TCP Socket  │ unpack []byte │ unmarshal protocol │ recv-channel <- Msg │     Msg <- recv-channel     │        handle Msg        │
     └──────────────┴───────────────┴────────────────────┴─────────────────────┴─────────────────────────────┴──────────────────────────┘
     ```
     - logic goroutine: handler -> send goroutine: pack []byte, marshal -> os: tcp socket
     ```
     ┌──────────────────────────┬─────────────────────────────┬─────────────────────┬────────────────────────────────┬────────────┐
-    │ logic goroutine: handler │ logic goroutine: dispatcher │   send goroutine    │   send goroutine: connector    │     OS     │
+    │ logic-goroutine: handler │ logic-goroutine: dispatcher │   send-goroutine    │   send-goroutine: connector    │     OS     │
     ├──────────────────────────┼─────────────────────────────┼─────────────────────┼──────────────────┬─────────────┼────────────┤
-    │         make Msg         │     send channel <- Msg     │ Msg <- send channel │ marshal protocol │ pack []byte │ TCP Socket │
+    │         make Msg         │     send-channel <- Msg     │ Msg <- send-channel │ marshal protocol │ pack []byte │ TCP Socket │
     └──────────────────────────┴─────────────────────────────┴─────────────────────┴──────────────────┴─────────────┴────────────┘
     ```
 
@@ -228,6 +231,6 @@ level 0 是系统层
 
 - link end process:
     - close link tcp socket connection
-        - recv goroutine receive, then close recv channel and end recv goroutine
-        - in server link, logic goroutine will end by context canceler
-        - in client link, logic goroutine will
+        - recv goroutine receive, then close recv-channel and end recv-goroutine
+        - in server link, logic-goroutine will end by context canceler
+        - in client link, logic-goroutine will

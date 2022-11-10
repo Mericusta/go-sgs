@@ -1,0 +1,13 @@
+2022-11-10T10:12:28.890+0800	INFO	sg-robot/main.go:22	SG-Robot run
+2022-11-10T10:12:28.895+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668046348895082621}
+2022-11-10T10:12:28.895+0800	INFO	sg-robot/robotmgr.go:26	robot dial done	{"link": 1668046348895082621}
+2022-11-10T10:12:28.895+0800	INFO	sg-robot/robotmgr.go:65	robot send event	{"link": 1668046348895082621, "ID": 1}
+2022-11-10T10:12:28.896+0800	INFO	link/link.go:58	begin recv goroutine	{"link": 1668046348895082621}
+2022-11-10T10:12:28.896+0800	INFO	link/link.go:82	begin send goroutine	{"link": 1668046348895082621}
+2022-11-10T10:12:28.896+0800	INFO	dispatcher/dispatcher.go:42	begin logic goroutine	{"link": 1668046348895082621}
+2022-11-10T10:12:28.896+0800	INFO	dispatcher/dispatcher.go:57	handle send event	{"link": 1668046348895082621, "event": {}}
+2022-11-10T10:12:28.900+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668046348895082621, "event": {}}
+2022-11-10T10:12:28.900+0800	INFO	sg-robot/handler.go:33	robot login with init counter	{"ID": 1668046348895082621, "counter": 545}
+2022-11-10T10:12:28.900+0800	INFO	sg-robot/handler.go:42	robot send business key value1 value2 wait expect	{"ID": 1668046348895082621, "key": 1668046348900660406, "value1": 545, "value2": 527, "expect": 1072}
+2022-11-10T10:12:28.902+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668046348895082621, "event": {}}
+2022-11-10T10:12:28.902+0800	INFO	sg-robot/handler.go:65	robot recv business key result, then delete expect	{"ID": 1668046348895082621, "key": 1668046348900660406, "result": 1072}

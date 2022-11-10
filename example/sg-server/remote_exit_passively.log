@@ -1,0 +1,21 @@
+2022-11-10T09:33:10.135+0800	INFO	sg-server/main.go:20	SG-Server run
+2022-11-10T09:33:19.285+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668043999285132445}
+2022-11-10T09:33:19.286+0800	INFO	dispatcher/dispatcher.go:42	begin logic goroutine	{"link": 1668043999285132445}
+2022-11-10T09:33:19.286+0800	INFO	link/link.go:58	begin recv goroutine	{"link": 1668043999285132445}
+2022-11-10T09:33:19.286+0800	INFO	link/link.go:82	begin send goroutine	{"link": 1668043999285132445}
+2022-11-10T09:33:19.288+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668043999285132445, "event": {}}
+2022-11-10T09:33:19.288+0800	INFO	sg-server/handler.go:35	link as user login with counter	{"link": 1668043999285132445, "counter": 545}
+2022-11-10T09:33:19.291+0800	INFO	dispatcher/dispatcher.go:81	handle recv event	{"link": 1668043999285132445, "event": {}}
+2022-11-10T09:33:19.291+0800	INFO	sg-server/handler.go:70	link as user recv business key value1 value2	{"link": 1668043999285132445, "key": 1668043999290289295, "value1": 545, "value2": 527}
+2022-11-10T09:34:20.187+0800	INFO	link/link.go:63	tcp socket closed by remote	{"link": 1668043999285132445}
+2022-11-10T09:34:20.187+0800	INFO	link/link.go:70	close recv channel	{"link": 1668043999285132445}
+2022-11-10T09:34:20.187+0800	INFO	link/link.go:72	end recv goroutine	{"link": 1668043999285132445}
+2022-11-10T09:34:20.187+0800	INFO	dispatcher/dispatcher.go:73	receive channel closed	{"link": 1668043999285132445}
+2022-11-10T09:34:20.188+0800	INFO	link/link.go:138	link exit	{"link": 1668043999285132445}
+2022-11-10T09:34:20.188+0800	INFO	dispatcher/dispatcher.go:92	end logic goroutine	{"link": 1668043999285132445}
+2022-11-10T09:34:20.188+0800	INFO	link/link.go:86	send goroutine event is nil or not ok, end send goroutine	{"link": 1668043999285132445, "isNil": true, "ok": false}
+2022-11-10T09:34:45.251+0800	INFO	framework/framework.go:149	stop signal
+2022-11-10T09:34:45.251+0800	INFO	framework/framework.go:152	exit framework
+2022-11-10T09:34:45.252+0800	INFO	framework/framework.go:131	close acceptor
+2022-11-10T09:34:45.252+0800	INFO	framework/framework.go:66	framework acceptor closed
+2022-11-10T09:34:45.252+0800	INFO	framework/framework.go:154	waitting 5 seconds

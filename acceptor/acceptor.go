@@ -13,5 +13,5 @@ const (
 type IAcceptor interface {
 	Accept() (net.Conn, error)
 	Close() error
-	State() AcceptorState
+	State() AcceptorState // TODO: 有并发问题
 }

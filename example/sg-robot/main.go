@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	const robotCount int = 100
+	const robotCount int = 1
 
 	// register msg ID protocol
 	msg.Init()

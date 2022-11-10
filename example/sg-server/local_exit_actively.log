@@ -1,0 +1,28 @@
+2022-11-10T17:27:09.930+0800	INFO	sg-server/main.go:20	SG-Server run
+2022-11-10T17:27:13.539+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668072433539517465}
+2022-11-10T17:27:13.539+0800	INFO	dispatcher/dispatcher.go:42	begin logic-goroutine	{"link": 1668072433539517465}
+2022-11-10T17:27:13.539+0800	INFO	link/link.go:60	begin recv goroutine	{"link": 1668072433539517465}
+2022-11-10T17:27:13.540+0800	INFO	link/link.go:84	begin send-goroutine	{"link": 1668072433539517465}
+2022-11-10T17:27:13.540+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668072433539517465, "event": {}}
+2022-11-10T17:27:13.541+0800	INFO	sg-server/handler.go:37	link as user login with counter	{"link": 1668072433539517465, "counter": 545}
+2022-11-10T17:27:13.541+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668072433539517465, "length": 0}
+2022-11-10T17:27:13.542+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668072433539517465, "event": {}}
+2022-11-10T17:27:13.542+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"link": 1668072433539517465, "key": 1668072433541715623, "value1": 545, "value2": 527}
+2022-11-10T17:27:13.542+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668072433539517465, "length": 0}
+2022-11-10T17:27:23.545+0800	INFO	link/link.go:145	link exit	{"link": 1668072433539517465}
+2022-11-10T17:27:23.546+0800	INFO	link/link.go:149	close connector	{"link": 1668072433539517465}
+2022-11-10T17:27:23.546+0800	INFO	link/link.go:68	tcp socket closed by local	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:72	close recv-channel	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:79	end recv-goroutine	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:155	close send-channel	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	dispatcher/dispatcher.go:73	recv-channel closed	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:142	link already exit	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	dispatcher/dispatcher.go:75	close event-channel	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	dispatcher/dispatcher.go:93	end logic-goroutine	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:89	send-channel closed	{"link": 1668072433539517465}
+2022-11-10T17:27:23.547+0800	INFO	link/link.go:102	end send-goroutine	{"link": 1668072433539517465}
+2022-11-10T17:58:50.120+0800	INFO	framework/framework.go:149	stop signal
+2022-11-10T17:58:50.122+0800	INFO	framework/framework.go:152	exit framework
+2022-11-10T17:58:50.122+0800	INFO	framework/framework.go:131	close acceptor
+2022-11-10T17:58:50.123+0800	INFO	framework/framework.go:66	framework acceptor closed
+2022-11-10T17:58:50.123+0800	INFO	framework/framework.go:154	waitting 5 seconds

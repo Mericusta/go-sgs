@@ -1,0 +1,16 @@
+2022-11-10T18:10:16.647+0800	INFO	sg-server/main.go:20	SG-Server run
+2022-11-10T18:10:21.977+0800	INFO	framework/framework.go:101	create link and its dispatcher	{"link": 1668075021977016454}
+2022-11-10T18:10:21.977+0800	INFO	dispatcher/dispatcher.go:42	begin logic-goroutine	{"link": 1668075021977016454}
+2022-11-10T18:10:21.978+0800	INFO	link/link.go:60	begin recv goroutine	{"link": 1668075021977016454}
+2022-11-10T18:10:21.978+0800	INFO	link/link.go:84	begin send-goroutine	{"link": 1668075021977016454}
+2022-11-10T18:10:21.981+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668075021977016454, "event": {}}
+2022-11-10T18:10:21.982+0800	INFO	sg-server/handler.go:35	link as user login with counter	{"link": 1668075021977016454, "counter": 545}
+2022-11-10T18:10:21.982+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668075021977016454, "length": 0}
+2022-11-10T18:10:21.985+0800	INFO	dispatcher/dispatcher.go:82	handle recv-event	{"link": 1668075021977016454, "event": {}}
+2022-11-10T18:10:21.985+0800	INFO	sg-server/handler.go:70	link as user recv business key value1 value2	{"link": 1668075021977016454, "key": 1668075021984339391, "value1": 545, "value2": 527}
+2022-11-10T18:10:21.986+0800	DEBUG	link/link.go:50	link send-channel length	{"link": 1668075021977016454, "length": 0}
+2022-11-10T18:10:28.665+0800	INFO	framework/framework.go:149	stop signal
+2022-11-10T18:10:28.666+0800	INFO	framework/framework.go:152	exit framework
+2022-11-10T18:10:28.666+0800	INFO	framework/framework.go:131	close acceptor
+2022-11-10T18:10:28.666+0800	INFO	framework/framework.go:66	framework acceptor closed
+2022-11-10T18:10:28.666+0800	INFO	framework/framework.go:154	waitting 5 seconds
