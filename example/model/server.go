@@ -1,19 +1,17 @@
 package model
 
-import "math/rand"
-
 type User struct {
-	Counter int `json:"counter"`
+	coutner int
 }
 
 func NewUser() *User {
-	return &User{Counter: rand.Intn(1024)}
+	return &User{}
 }
 
-func (u *User) AddCounter() {
-	u.Counter++
+func (u *User) CounterIncrease() {
+	u.coutner++
 }
 
-func (u *User) GetCounter() int {
-	return u.Counter
+func (u *User) Counter() int {
+	return u.coutner
 }

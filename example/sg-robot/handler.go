@@ -76,7 +76,12 @@ func RegisterRobotHandler() {
 			}
 			ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
 			logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
+
+			if ctx.Robot().Counter() == 6 {
+				panic("robot painc here")
+			}
 		} else {
+
 			// condition: client exit actively
 			c2sMsg := &msg.C2SLogout{}
 			ctx.Link().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))

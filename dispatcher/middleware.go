@@ -7,3 +7,7 @@ import (
 type HandleMiddleware interface {
 	Do(IContext, *event.Event) bool
 }
+
+type RecoverMiddleware interface {
+	Recover() bool
+}

@@ -5,7 +5,7 @@ import (
 	"github.com/Mericusta/go-sgs/logger"
 )
 
-const robotCount int = 1000
+const robotCount int = 1
 const requestCount int = 10
 
 func main() {

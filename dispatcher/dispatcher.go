@@ -16,6 +16,7 @@ type Dispatcher struct {
 	eventChannel        chan *event.Event
 	handlerMgr          map[protocol.ProtocolID]FrameworkHandler
 	handleMiddlewareMgr []HandleMiddleware
+	recoverMiddleware   RecoverMiddleware
 }
 
 func New(l *link.Link) *Dispatcher {
@@ -38,10 +39,17 @@ func (d *Dispatcher) SetHandleMiddleware(hmdMgr []HandleMiddleware) {
 	d.handleMiddlewareMgr = hmdMgr
 }
 
+func (d *Dispatcher) SetRecoverMiddleware() {
+
+}
+
 func (d *Dispatcher) HandleLogic() {
+	loopCounter := 0
 	logger.Logger().Info("begin logic-goroutine", zap.Uint64("link", d.Link().UID()))
 LOOP:
 	for {
+		logger.Logger().Debug("HandleLogic begin loop", zap.Int("loopCounter", loopCounter))
+		loopCounter++
 		select {
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
 			// 本地主动断开
@@ -80,17 +88,28 @@ LOOP:
 
 			// 接收逻辑
 			logger.Logger().Info("handle recv-event", zap.Uint64("link", d.Link().UID()), zap.Any("event", e))
-			if d.handleIntercept(e) {
-				handler := d.handlerMgr[e.ID()]
-				if handler == nil {
-					logger.Logger().Error("dispatcher event ID handler is nil", zap.Uint32("ID", uint32(e.ID())))
-					continue
-				}
-				handler(d, e.Data())
-			}
+			d.handle(e)
+			logger.Logger().Debug("handle done", zap.Uint64("link", d.Link().UID()))
 		}
 	}
 	logger.Logger().Info("end logic-goroutine", zap.Uint64("link", d.Link().UID()))
+}
+
+func (d *Dispatcher) handle(e *event.Event) {
+	defer func() {
+		if panicInfo := recover(); panicInfo != nil {
+			logger.Logger().Warn("dispatcher handle panic info and recover\n", zap.Any("panicInfo", panicInfo))
+		}
+	}()
+
+	if d.handleIntercept(e) {
+		handler := d.handlerMgr[e.ID()]
+		if handler == nil {
+			logger.Logger().Error("dispatcher event ID handler is nil", zap.Uint32("ID", uint32(e.ID())))
+			return
+		}
+		handler(d, e.Data())
+	}
 }
 
 func (d *Dispatcher) handleIntercept(e *event.Event) bool {

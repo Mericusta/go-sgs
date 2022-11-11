@@ -32,10 +32,12 @@ func RegisterHandler() {
 			return
 		}
 
-		logger.Logger().Info("link as user login with counter", zap.Uint64("link", ctx.Link().UID()), zap.Int("counter", user.GetCounter()))
+		logger.Logger().Info("link as user login with counter", zap.Uint64("link", ctx.Link().UID()), zap.Int("counter", user.Counter()))
 
 		s2cMsg := &msg.S2CLoginData{
-			User: user,
+			User: &msg.User{
+				Counter: user.Counter(),
+			},
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
 	}
@@ -66,13 +68,17 @@ func RegisterUserHandler() {
 			return
 		}
 
-		ctx.User().AddCounter()
+		ctx.User().CounterIncrease()
 		logger.Logger().Info("link as user recv business key value1 value2", zap.Uint64("link", ctx.Link().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
 
 		s2cMsg := &msg.S2CBusinessData{
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,
 		}
 		ctx.Link().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
+
+		if ctx.User().Counter() == controlCount {
+			panic("server panic here")
+		}
 
 		// time.Sleep(time.Second * 10)
 		// // condition: server exit actively

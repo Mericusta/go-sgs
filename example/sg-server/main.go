@@ -5,6 +5,8 @@ import (
 	"github.com/Mericusta/go-sgs/logger"
 )
 
+const controlCount int = 5
+
 func main() {
 	// register msg ID protocol
 	msg.Init()
