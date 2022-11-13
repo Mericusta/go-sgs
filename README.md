@@ -19,7 +19,7 @@
 - TODO: 实际情况中，不同的服务器需要的指标不同，比如 gate 服务器需要保持大量 tcp 链接收发消息，game 服务器需要做大量逻辑处理等，同一套 Framework 是否真的能 hold 住所有的情况？考虑按性能指标做出特异化区分，比如 game 做逻辑处理就用空间换时间，gate 做 tcp 套接字处理就要做到容易被控制，出现异常容易察觉，恢复等
 - TODO: 运行时数据结构应当和交换协议的数据结构区分开，并建立自动化映射关系
 
-#### Resource Model
+#### Resource Model 资源模型
 
 - use `middleware` as server option to control resources model
 
@@ -41,18 +41,17 @@
     - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
     - Note: expect golang feature: recv-channel without blocking, like try lock -> try recv-channel
 
-#### Call chain level
+#### Call chain level 调用链层级
 
-- level 0: tcp socket os
-- level 1: connection send/recv goroutine
-- level 2: link send/recv goroutine
-- level 3: dispatcher logic goroutine
-- level 4: user logic goroutine
-- level 5: handler
-
-level 4~5 是应用层
-level 1~3 是框架层
-level 0 是系统层
+- OS 系统层
+    - level 0: tcp socket os
+- 框架层
+    - level 1: connection send/recv goroutine
+    - level 2: link send/recv goroutine
+    - level 3: dispatcher logic goroutine
+- 应用层
+    - level 4: user logic goroutine
+    - level 5: handler
 
 - 框架层和应用层要有互相控住的方式，框架层 tcp socket 断开之后要控制应用层退出，应用层退出之后要断开框架层 tcp socket
 - TODO: 框架层和应用层的退出应当有序
