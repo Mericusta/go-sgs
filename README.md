@@ -2,9 +2,160 @@
 
 ## version 0.0.1
 
-### Design Ideas
+### Definition
 
-#### Drafts
+#### Global Definition 全局定义
+
+##### Call Chain Level 调用链层级
+
+- OS 系统层
+- Framework 框架层
+- Application 应用层
+
+##### Goroutine Type 协程类型
+
+- Send-Goroutine 发送协程
+- Recv-Goroutine 接收协程
+- Logic-Goroutine 逻辑协程
+
+#### OS Level Definition 系统层定义
+
+##### Tcp Socket Packet tcp 套接字数据包
+
+- tcp 套接字数据传递的最小单位
+- tcp 套接字数据包支持自定义格式，默认格式为 TLV
+- tlv tcp socket packet TLV 格式 tcp 套接字数据包
+```
+┌─────┬────────┬───────┐
+│ Tag │ Length │ Value │
+├─────┼────────┼───────┤
+│  4  │   4    │       │
+└─────┴────────┴───────┘
+```
+
+#### Framework Level Definition 框架层定义
+
+##### Protocol 数据交换协议
+
+> github.com/Mericusta/go-sgs/protocol
+
+- 做数据交换时，`运行时的内存数据`和 `[]byte` 相互转换的算法
+    - TODO: 无法做 model 隔离，因为必须要导出
+
+- 数据编码：将`运行时的内存数据`通过压缩/加密等手段生成 `[]byte` 数据
+- 数据解码：将 `[]byte` 数据通过解压/解密等手段生成`运行时的内存数据`
+
+- 支持数据交换格式：
+    - json
+    - protobuf
+    - TODO: MessagePack
+    - TODO: bson
+
+##### Packer 打包器
+
+> github.com/Mericusta/go-sgs/packer
+
+- 连接`系统层`和`框架层`，从 `OS` 中收发 `tcp socket packet`，根据 `OS` 进行差异化实现
+- 打包：将 `运行时的内存数据` 按某种 `protocol` 编码成 `[]byte`，再按指定方式填充生成 `tcp socket packet`
+- 解包：将 `tcp socket packet` 按指定方式读取成 `[]byte`，再按某种 `protocol` 解码成的 `运行时的内存数据`
+
+##### Link 
+
+##### Framework 框架
+
+> github.com/Mericusta/go-sgs/framework
+
+- framework 框架，对外服务的基本框架，封装底层细节，控制运行时程序资源分配
+
+##### Dispatcher 分发器
+
+> github.com/Mericusta/go-sgs/dispatcher
+
+- TODO: dispatcher 分发器
+    - 执行`逻辑协程`
+    - 监听`发送通道`，主动发送消息，和 `send-goroutine` 交互
+    - 监听`接收通道`，被动接收消息，和 `recv-goroutine` 交互
+
+- 是否应该处理 send/recv 剩余的数据？
+    - 不应该，理由如下：
+    ```
+    框架层到应用层的抽象结构和调用链是栈结构，从建立 tcp socket 开始抽象层次依次为：
+        - level 0: tcp socket os
+        - level 1: connection send/recv goroutine
+        - level 2: link send/recv goroutine
+        - level 3: dispatcher logic goroutine
+        - level 4: user logic goroutine
+        - level 5: handler 栈顶
+    level 4~5 是应用层
+    level 1~3 是框架层
+    level 0 是系统层
+    - 当远端应用层主动退出时，如主动离线：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当远端应用层被动退出时，如远端断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    - 当本地应用层主动退出时，如踢掉客户端：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
+    - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
+    保险起见，都不处理
+    ```
+
+##### Acceptor
+
+> github.com/Mericusta/go-sgs/acceptor
+
+- acceptor 接收器，产生 net.Conn 的方式
+    - 服务器接收器：通过 net.Listener.Accept() 方法产生 net.Conn
+    - 客户端接收器：通过 net.DialTimeout() 方法产生 net.Conn
+
+- 一个 framework 可以同时支持多个接收器
+- Acceptor 关闭不代表 net.Conn 需要关闭
+    
+##### Link
+
+> github.com/Mericusta/go-sgs/link
+
+- link 链接，tcp 链接的抽象
+    - 提供 recv goroutine 的执行逻辑
+    - 提供 send goroutine 的执行逻辑
+    - 对接 logic goroutine 的执行逻辑
+
+##### Event
+
+> github.com/Mericusta/go-sgs/event
+
+- `recv/send goroutine` 和 `logic goroutine` 传递消息的载体
+
+##### Handler
+
+> handle 行为：通过 protocol ID 查找函数回调（称为 handler）并执行的过程
+> handle 行为的执行体
+
+- handler 处理器，分为两类
+    - 服务层处理器：不存在用户上下文
+    - 用户层处理器：存在用户上下文，可能分为多种类型的用户（客户端用户，服务器用户等）
+
+##### Middleware
+
+> middleware 指的是针对某一种行为的中间件 
+> middleware 作为连接媒介，必须定义在某个 concept 中
+
+###### Handle Middleware
+
+> github.com/Mericusta/go-sgs/dispatcher
+> 针对 dispatcher 的 handle 行为的中间件
+
+- handle 中间件
+    - 流程控制
+    - 多个中间件：
+        - 层层传递？
+            - Framework 层如何知道层级之间的关系？
+        - 平级传递？
+            - 中间件有相互依赖如何处理？（MiddlewareA -> MiddlewareB 而 MiddlewareB -x-> MiddlewareA）
+        - 中间件排序？
+            - 添加中间件的时候如何知道其他中间件的信息？
+        - 通过 protocol ID 把消息路由到不同的 middleware 上去？
+- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
+
+### Design Ideas 设计理念
+
+#### Drafts 草稿
 
 - TODO: 事件驱动，消息驱动
 - TODO: 中间件：控制资源模型
@@ -18,6 +169,16 @@
         - 每个包内告知
 - TODO: 实际情况中，不同的服务器需要的指标不同，比如 gate 服务器需要保持大量 tcp 链接收发消息，game 服务器需要做大量逻辑处理等，同一套 Framework 是否真的能 hold 住所有的情况？考虑按性能指标做出特异化区分，比如 game 做逻辑处理就用空间换时间，gate 做 tcp 套接字处理就要做到容易被控制，出现异常容易察觉，恢复等
 - TODO: 运行时数据结构应当和交换协议的数据结构区分开，并建立自动化映射关系
+- TODO: panic 池，提供应用层 panic recover 的能力
+
+#### Custom TCP Socket Packet 自定义套接字数据包
+
+- 通过实现`打包器`的接口，来实现自定义套接字数据包
+- 通过编译选项，来编译自定义的套接字数据包
+
+#### Custom Protocol 自定义数据交换协议
+
+- 通过实现函数 `func Marshal(any) ([]byte, error)` 和 `func Unmarshal(ProtocolID, []byte) (any, error)` 来实现自定义数据交换协议
 
 #### Resource Model 资源模型
 
@@ -41,30 +202,26 @@
     - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
     - Note: expect golang feature: recv-channel without blocking, like try lock -> try recv-channel
 
-#### Call chain level 调用链层级
+#### Call Chain Level 调用链层级
 
-- OS 系统层
-    - level 0: tcp socket os
-- 框架层
+- 系统层 os
+    - level 0: tcp socket
+- 框架层 framework
     - level 1: connection send/recv goroutine
     - level 2: link send/recv goroutine
     - level 3: dispatcher logic goroutine
-- 应用层
+- 应用层 application
     - level 4: user logic goroutine
     - level 5: handler
 
 - 框架层和应用层要有互相控住的方式，框架层 tcp socket 断开之后要控制应用层退出，应用层退出之后要断开框架层 tcp socket
 - TODO: 框架层和应用层的退出应当有序
 
-#### Recv Goroutine
+#### Recv Goroutine 接收消息的 goroutine
 
-- recv goroutine 接收消息的 goroutine
+#### Send Goroutine 发送消息的 goroutine
 
-#### Send Goroutine
-
-- send goroutine 发送消息的 goroutine
-
-#### Logic Goroutine
+#### Logic Goroutine 处理逻辑的 goroutine
 
 > 不一定只由 `recv goroutine` 来触发，`logic goroutine` 本身是可以由**数据驱动**的（比如每隔一段时间主动推送消息或者接收到其他服务器推送给用户的消息）
 > 但**数据驱动**和 `dispatcher` 不好结合在一起，因为要**数据驱动**是独占 `logic goroutine` 的，而 `dispatcher` 的目的是共享 `logic goroutine`
@@ -85,131 +242,13 @@
 - 3 主动结束
 - 4 主动发送
 
-### Concepts
-
-#### Framework Level Concepts
-
-##### Framework
-
-> github.com/Mericusta/go-sgs/framework
-
-- framework 框架，对外服务的基本框架，封装底层细节
-
-##### Dispatcher
-
-> github.com/Mericusta/go-sgs/dispatcher
-
-- TODO: dispatcher 分发器
-    - 执行`逻辑协程`
-    - 监听`发送通道`，主动发送消息，和 `send goroutine` 交互
-    - 监听`接收通道`，被动接收消息，和 `recv goroutine` 交互
-
-- 是否应该处理 send/recv 剩余的数据？
-    - 不应该，理由如下：
-    ```
-    框架层到应用层的抽象结构和调用链是栈结构，从建立 tcp socket 开始抽象层次依次为：
-        - level 0: tcp socket os
-        - level 1: connection send/recv goroutine
-        - level 2: link send/recv goroutine
-        - level 3: dispatcher logic goroutine
-        - level 4: user logic goroutine
-        - level 5: handler 栈顶
-    level 4~5 是应用层
-    level 1~3 是框架层
-    level 0 是系统层
-    - 当远端应用层主动退出时，如主动离线：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
-    - 当远端应用层被动退出时，如远端断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
-    - 当本地应用层主动退出时，如踢掉客户端：会从栈顶依次退出对应的抽象层，执行对应层次的逻辑，此时无法处理 send/recv 中的内容，因为执行的主体不存在了
-    - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
-    保险起见，都不处理
-    ```
-
-##### Protocol
-
-> github.com/Mericusta/go-sgs/protocol
-
-- protocol 协议格式，数据压缩/解压/加密/解密成 []byte 的算法
-    - TODO: 无法做 model 隔离，因为必须要导出
-
-- 支持协议格式：
-    - json
-    - protobuf
-    - TODO: MessagePack
-    - TODO: bson
-
-#### Acceptor
-
-> github.com/Mericusta/go-sgs/acceptor
-
-- acceptor 接收器，产生 net.Conn 的方式
-    - 服务器接收器：通过 net.Listener.Accept() 方法产生 net.Conn
-    - 客户端接收器：通过 net.DialTimeout() 方法产生 net.Conn
-
-- 一个 framework 可以同时支持多个接收器
-- Acceptor 关闭不代表 net.Conn 需要关闭
-
-#### Connector
-
-> github.com/Mericusta/go-sgs/connector
-
-- connector 连接器
-    - 连接框架层和系统层，负责 tcp socket packet 的收发
-    - 负责将按照某种协议格式压缩/加密的 []byte 按指定方式打包成 tcp socket packet
-    - 负责将 tcp socket packet 解包成 []byte 并按照某种协议格式解压/解密
-    
-#### Link
-
-> github.com/Mericusta/go-sgs/link
-
-- link 链接，tcp 链接的抽象
-    - 提供 recv goroutine 的执行逻辑
-    - 提供 send goroutine 的执行逻辑
-    - 对接 logic goroutine 的执行逻辑
-
-#### Event
-
-> github.com/Mericusta/go-sgs/event
-
-- `recv/send goroutine` 和 `logic goroutine` 传递消息的载体
-
-#### Handler
-
-> handle 行为：通过 protocol ID 查找函数回调（称为 handler）并执行的过程
-> handle 行为的执行体
-
-- handler 处理器，分为两类
-    - 服务层处理器：不存在用户上下文
-    - 用户层处理器：存在用户上下文，可能分为多种类型的用户（客户端用户，服务器用户等）
-
-#### Middleware
-
-> middleware 指的是针对某一种行为的中间件 
-> middleware 作为连接媒介，必须定义在某个 concept 中
-
-##### Handle Middleware
-
-> github.com/Mericusta/go-sgs/dispatcher
-> 针对 dispatcher 的 handle 行为的中间件
-
-- handle 中间件
-    - 流程控制
-    - 多个中间件：
-        - 层层传递？
-            - Framework 层如何知道层级之间的关系？
-        - 平级传递？
-            - 中间件有相互依赖如何处理？（MiddlewareA -> MiddlewareB 而 MiddlewareB -x-> MiddlewareA）
-        - 中间件排序？
-            - 添加中间件的时候如何知道其他中间件的信息？
-        - 通过 protocol ID 把消息路由到不同的 middleware 上去？
-- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
-
 ### Process
 
 - client - server transport process
     - os: tcp socket -> recv goroutine: unpack []byte, unmarshal -> logic goroutine: handler
     ```
     ┌──────────────┬────────────────────────────────────┬─────────────────────┬─────────────────────────────┬──────────────────────────┐
-    │      OS      │     recv-goroutine: connector      │   recv-goroutine    │ logic-goroutine: dispatcher │ logic-goroutine: handler │
+    │      OS      │       recv-goroutine: packer       │   recv-goroutine    │ logic-goroutine: dispatcher │ logic-goroutine: handler │
     ├──────────────┼───────────────┬────────────────────┼─────────────────────┼─────────────────────────────┼──────────────────────────┤
     │  TCP Socket  │ unpack []byte │ unmarshal protocol │ recv-channel <- Msg │     Msg <- recv-channel     │        handle Msg        │
     └──────────────┴───────────────┴────────────────────┴─────────────────────┴─────────────────────────────┴──────────────────────────┘
@@ -217,7 +256,7 @@
     - logic goroutine: handler -> send goroutine: pack []byte, marshal -> os: tcp socket
     ```
     ┌──────────────────────────┬─────────────────────────────┬─────────────────────┬────────────────────────────────┬────────────┐
-    │ logic-goroutine: handler │ logic-goroutine: dispatcher │   send-goroutine    │   send-goroutine: connector    │     OS     │
+    │ logic-goroutine: handler │ logic-goroutine: dispatcher │   send-goroutine    │     send-goroutine: packer     │     OS     │
     ├──────────────────────────┼─────────────────────────────┼─────────────────────┼──────────────────┬─────────────┼────────────┤
     │         make Msg         │     send-channel <- Msg     │ Msg <- send-channel │ marshal protocol │ pack []byte │ TCP Socket │
     └──────────────────────────┴─────────────────────────────┴─────────────────────┴──────────────────┴─────────────┴────────────┘

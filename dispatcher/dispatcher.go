@@ -55,8 +55,8 @@ LOOP:
 			// 本地主动断开
 			if !ok {
 				logger.Logger().Info("event channel closed", zap.Uint64("link", d.Link().UID()))
-				// d.Link().Exit() // 关闭 connector，退出发送协程
-				// 关闭 connector 会导致接收协程退出
+				// d.Link().Exit() // 关闭 connection，退出发送协程
+				// 关闭 connection 会导致接收协程退出
 				break LOOP
 				// TODO: 是否应该处理 recv 剩余的数据？
 			}
@@ -74,12 +74,12 @@ LOOP:
 			d.Link().Send(e)
 		case e, ok := <-d.Link().Recv(): // 被动接收
 			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
-			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connector
-			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connector（重复关闭）
+			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connection
+			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connection（重复关闭）
 			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
 			if !ok {
 				logger.Logger().Info("recv-channel closed", zap.Uint64("link", d.Link().UID()))
-				d.Link().Exit() // 关闭 connector
+				d.Link().Exit() // 关闭 connection
 				logger.Logger().Info("close event-channel", zap.Uint64("link", d.Link().UID()))
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程

@@ -1,6 +1,6 @@
 //go:build tlv
 
-package connector
+package packer
 
 import (
 	"encoding/binary"
@@ -23,12 +23,12 @@ const (
 	TLVPacketDataLengthSize = 4
 )
 
-// 根据编译选项来确定 connector，所以名称必须一致
-type MessageConnector struct {
-	BaseConnector
+// 根据编译选项来确定 packer，所以名称必须一致
+type MessagePacker struct {
+	BasePacker
 }
 
-func (c *MessageConnector) SendMsg(msgID protocol.ProtocolID, msgData protocol.Protocol) error {
+func (c *MessagePacker) SendMsg(msgID protocol.ProtocolID, msgData protocol.Protocol) error {
 	msgValueByte, err := protocol.Marshal(msgData)
 	if len(msgValueByte) == 0 {
 		return fmt.Errorf("marshal msg %v %v got empty slice", msgID, msgData)
@@ -50,7 +50,7 @@ func (c *MessageConnector) SendMsg(msgID protocol.ProtocolID, msgData protocol.P
 	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
 	copy(tlvPacket[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgValueByte)
 
-	writeLength, writeError := c.BaseConnector.Connection.Write(tlvPacket)
+	writeLength, writeError := c.BasePacker.Connection.Write(tlvPacket)
 	if writeError != nil {
 		return writeError
 	} else if writeLength != tlvPacketLength {

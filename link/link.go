@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/Mericusta/go-sgs/config"
-	"github.com/Mericusta/go-sgs/connector"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/logger"
+	"github.com/Mericusta/go-sgs/packer"
 	"go.uber.org/zap"
 )
 
@@ -21,20 +21,20 @@ const (
 )
 
 type Link struct {
-	uid       uint64
-	state     LINK_STATE // TODO: 有并发问题
-	connector connector.Connector
-	recv      chan *event.Event // TODO: 不要传递小对象
-	send      chan *event.Event // TODO: 不要传递小对象
+	uid    uint64
+	state  LINK_STATE // TODO: 有并发问题
+	packer packer.Packer
+	recv   chan *event.Event // TODO: 不要传递小对象
+	send   chan *event.Event // TODO: 不要传递小对象
 }
 
 func New(connection net.Conn) *Link {
 	return &Link{
-		uid:       uint64(time.Now().UnixNano()), // TODO: distributed-guid
-		state:     LINK_CONNECTED,
-		connector: connector.New(connection),
-		recv:      make(chan *event.Event, config.ChannelBuffer),
-		send:      make(chan *event.Event, config.ChannelBuffer),
+		uid:    uint64(time.Now().UnixNano()), // TODO: distributed-guid
+		state:  LINK_CONNECTED,
+		packer: packer.New(connection),
+		recv:   make(chan *event.Event, config.ChannelBuffer),
+		send:   make(chan *event.Event, config.ChannelBuffer),
 	}
 }
 
@@ -61,7 +61,7 @@ func (l *Link) HandleRecv() {
 	logger.Logger().Info("begin recv goroutine", zap.Uint64("link", l.UID()))
 LOOP:
 	for {
-		protocolID, protocolData, err := l.connector.RecvMsg()
+		protocolID, protocolData, err := l.packer.RecvMsg()
 		if err != nil {
 			if err == io.EOF {
 				logger.Logger().Info("tcp socket closed by remote", zap.Uint64("link", l.UID()))
@@ -90,7 +90,7 @@ LOOP:
 			logger.Logger().Info("send-channel closed", zap.Uint64("link", l.UID()))
 			break LOOP
 		}
-		err := l.connector.SendMsg(sendMsg.ID(), sendMsg.Data())
+		err := l.packer.SendMsg(sendMsg.ID(), sendMsg.Data())
 		if err != nil {
 			logger.Logger().Error("send tcp socket packet occurs error", zap.Uint64("link", l.UID()), zap.Error(err))
 			if err == io.EOF {
@@ -147,10 +147,10 @@ func (l *Link) Exit() {
 	// 标记状态，防止逻辑协程在 handler 中可能会往已关闭的 channel 中发送数据从而导致阻塞
 	l.state = LINK_CLOSED
 	// 主动断开 tcp socket
-	logger.Logger().Info("close connector", zap.Uint64("link", l.uid))
-	err := l.connector.Close()
+	logger.Logger().Info("close packer", zap.Uint64("link", l.uid))
+	err := l.packer.Close()
 	if err != nil {
-		logger.Logger().Warn("close connector occurs error", zap.Error(err))
+		logger.Logger().Warn("close packer occurs error", zap.Error(err))
 	}
 	// 退出 send 协程
 	logger.Logger().Info("close send-channel", zap.Uint64("link", l.uid))
