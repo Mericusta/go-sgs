@@ -9,23 +9,23 @@ import (
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
-func (c *MessagePacker) RecvMsg() (protocol.ProtocolID, protocol.Protocol, error) {
+func (p *MessagePacker) Unpack() (protocol.ProtocolID, protocol.Protocol, error) {
 	tagBytes := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := c.Connection.Read(tagBytes)
+	_, readTagError := p.Connection.Read(tagBytes)
 	if readTagError != nil {
 		return 0, nil, readTagError
 	}
 	tag := binary.BigEndian.Uint32(tagBytes)
 
 	lengthBytes := make([]byte, TLVPacketDataLengthSize)
-	_, readLengthError := c.Connection.Read(lengthBytes)
+	_, readLengthError := p.Connection.Read(lengthBytes)
 	if readLengthError != nil {
 		return 0, nil, readLengthError
 	}
 	length := binary.BigEndian.Uint32(lengthBytes)
 
 	valueBytes := make([]byte, int(length))
-	readValueLength, readValueError := c.Connection.Read(valueBytes)
+	readValueLength, readValueError := p.Connection.Read(valueBytes)
 	if readValueError != nil {
 		return 0, nil, readValueError
 	} else if readValueLength != int(length) {

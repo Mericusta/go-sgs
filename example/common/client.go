@@ -1,11 +1,11 @@
 package common
 
 import (
-	"github.com/Mericusta/go-sgs/link"
+	link "github.com/Mericusta/go-sgs/linker"
 )
 
 type Client struct {
-	*link.Link
+	*link.Linker
 	data *clientUserData
 }
 
@@ -15,7 +15,7 @@ type clientUserData struct {
 	expectMap   map[int]int
 }
 
-func NewClient(l *link.Link, index int) *Client {
+func NewClient(l *link.Linker, index int) *Client {
 	return &Client{
 		Link: l,
 		data: &clientUserData{

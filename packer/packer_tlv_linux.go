@@ -10,9 +10,9 @@ import (
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
-func (c *MessagePacker) RecvMsg() (protocol.ProtocolID, protocol.Protocol, error) {
+func (c *MessagePacker) Unpack() (protocol.ProtocolID, protocol.Protocol, error) {
 	tagBytes := make([]byte, TLVPacketDataTagSize)
-	_, readTagError := io.ReadFull(c.BasePacker.Connection, tagBytes)
+	_, readTagError := io.ReadFull(c.Connection, tagBytes)
 	if readTagError != nil {
 		return 0, nil, readTagError
 	}

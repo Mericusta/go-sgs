@@ -1,8 +1,8 @@
 package dispatcher
 
-import "github.com/Mericusta/go-sgs/link"
+import "github.com/Mericusta/go-sgs/linker"
 
 type IContext interface {
-	Link() *link.Link
+	Linker() *linker.Linker
 	Dispatcher() *Dispatcher
 }

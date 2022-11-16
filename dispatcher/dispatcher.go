@@ -3,23 +3,23 @@ package dispatcher
 import (
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
-	"github.com/Mericusta/go-sgs/link"
+	"github.com/Mericusta/go-sgs/linker"
 	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
 	"go.uber.org/zap"
 )
 
-type FrameworkHandler func(IContext, protocol.Protocol)
+type FrameworkHandler func(IContext, protocol.ProtocolMsg)
 
 type Dispatcher struct {
-	l                   *link.Link
+	l                   *linker.Linker
 	eventChannel        chan *event.Event
 	handlerMgr          map[protocol.ProtocolID]FrameworkHandler
 	handleMiddlewareMgr []HandleMiddleware
 	recoverMiddleware   RecoverMiddleware
 }
 
-func New(l *link.Link) *Dispatcher {
+func New(l *linker.Linker) *Dispatcher {
 	return &Dispatcher{
 		l:            l,
 		eventChannel: make(chan *event.Event, config.ChannelBuffer),
@@ -27,7 +27,7 @@ func New(l *link.Link) *Dispatcher {
 	}
 }
 
-func (d *Dispatcher) Link() *link.Link {
+func (d *Dispatcher) Linker() *linker.Linker {
 	return d.l
 }
 
@@ -45,7 +45,7 @@ func (d *Dispatcher) SetRecoverMiddleware() {
 
 func (d *Dispatcher) HandleLogic() {
 	loopCounter := 0
-	logger.Logger().Info("begin logic-goroutine", zap.Uint64("link", d.Link().UID()))
+	logger.Logger().Info("begin logic-goroutine", zap.Uint64("link", d.Linker().UID()))
 LOOP:
 	for {
 		logger.Logger().Debug("HandleLogic begin loop", zap.Int("loopCounter", loopCounter))
@@ -54,15 +54,15 @@ LOOP:
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
 			// 本地主动断开
 			if !ok {
-				logger.Logger().Info("event channel closed", zap.Uint64("link", d.Link().UID()))
-				// d.Link().Exit() // 关闭 connection，退出发送协程
+				logger.Logger().Info("event channel closed", zap.Uint64("link", d.Linker().UID()))
+				// d.Linker().Exit() // 关闭 connection，退出发送协程
 				// 关闭 connection 会导致接收协程退出
 				break LOOP
 				// TODO: 是否应该处理 recv 剩余的数据？
 			}
 
 			// 发送逻辑
-			logger.Logger().Info("handle send-event", zap.Uint64("link", d.Link().UID()), zap.Any("event", e))
+			logger.Logger().Info("handle send-event", zap.Uint64("link", d.Linker().UID()), zap.Any("event", e))
 			// if d.handleIntercept(e) {
 			// 	handler := d.handlerMgr[e.ID()]
 			// 	if handler == nil {
@@ -71,28 +71,28 @@ LOOP:
 			// 	}
 			// 	handler(d, e.Data())
 			// }
-			d.Link().Send(e)
-		case e, ok := <-d.Link().Recv(): // 被动接收
+			d.Linker().Send(e)
+		case e, ok := <-d.Linker().Recv(): // 被动接收
 			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
 			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connection
 			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connection（重复关闭）
 			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
 			if !ok {
-				logger.Logger().Info("recv-channel closed", zap.Uint64("link", d.Link().UID()))
-				d.Link().Exit() // 关闭 connection
-				logger.Logger().Info("close event-channel", zap.Uint64("link", d.Link().UID()))
+				logger.Logger().Info("recv-channel closed", zap.Uint64("link", d.Linker().UID()))
+				d.Linker().Exit() // 关闭 connection
+				logger.Logger().Info("close event-channel", zap.Uint64("link", d.Linker().UID()))
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程
 				// TODO: 是否需要处理 eventChannel 中剩余的内容？
 			}
 
 			// 接收逻辑
-			logger.Logger().Info("handle recv-event", zap.Uint64("link", d.Link().UID()), zap.Any("event", e))
+			logger.Logger().Info("handle recv-event", zap.Uint64("link", d.Linker().UID()), zap.Any("event", e))
 			d.handle(e)
-			logger.Logger().Debug("handle done", zap.Uint64("link", d.Link().UID()))
+			logger.Logger().Debug("handle done", zap.Uint64("link", d.Linker().UID()))
 		}
 	}
-	logger.Logger().Info("end logic-goroutine", zap.Uint64("link", d.Link().UID()))
+	logger.Logger().Info("end logic-goroutine", zap.Uint64("link", d.Linker().UID()))
 }
 
 func (d *Dispatcher) handle(e *event.Event) {

@@ -9,7 +9,7 @@ import (
 	"github.com/Mericusta/go-sgs/acceptor"
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/dispatcher"
-	"github.com/Mericusta/go-sgs/link"
+	link "github.com/Mericusta/go-sgs/linker"
 	"github.com/Mericusta/go-sgs/logger"
 	"github.com/Mericusta/go-sgs/protocol"
 	"go.uber.org/zap"

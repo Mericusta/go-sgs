@@ -7,8 +7,16 @@ import (
 )
 
 type Packer interface {
-	SendMsg(protocol.ProtocolID, protocol.Protocol) error
-	RecvMsg() (protocol.ProtocolID, protocol.Protocol, error)
+	// unpack into []byte from tcp packets and unmarshal []byte to memory data
+	Unpack() (protocol.ProtocolID, protocol.ProtocolMsg, error)
+
+	// marshal memory data to []byte and pack []byte into tcp packets
+	Pack(protocol.ProtocolID, protocol.ProtocolMsg) error
+
+	// tcp socket remote address
+	Address() string
+
+	// close tcp socket
 	Close() error
 }
 

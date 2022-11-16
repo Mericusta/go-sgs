@@ -6,12 +6,12 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func Marshal(v any) ([]byte, error) {
+func Marshal(v ProtocolMsg) ([]byte, error) {
 	return proto.Marshal(v.(proto.Message))
 }
 
-func Unmarshal(id ProtocolID, b []byte) (any, error) {
-	msg, err := newMsg(id)
+func Unmarshal(id ProtocolID, b []byte) (ProtocolMsg, error) {
+	msg, err := newProtocolMsg(id)
 	if msg == nil || err != nil {
 		return nil, err
 	}

@@ -14,12 +14,12 @@ const (
 )
 
 func Init() {
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Login), func() any { return &C2SLoginData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Login), func() any { return &S2CLoginData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Business), func() any { return &C2SBusinessData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Business), func() any { return &S2CBusinessData{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Logout), func() any { return &C2SLogout{} })
-	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Logout), func() any { return &S2CLogout{} })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Login), func() protocol.ProtocolMsg { return new(C2SLoginData) })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Login), func() protocol.ProtocolMsg { return new(S2CLoginData) })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Business), func() protocol.ProtocolMsg { return new(C2SBusinessData) })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Business), func() protocol.ProtocolMsg { return new(S2CBusinessData) })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(C2SMsgID_Logout), func() protocol.ProtocolMsg { return new(C2SLogout) })
+	protocol.RegisterProtocolMaker(protocol.ProtocolID(S2CMsgID_Logout), func() protocol.ProtocolMsg { return new(S2CLogout) })
 }
 
 type C2SLoginData struct {

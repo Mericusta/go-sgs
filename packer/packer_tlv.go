@@ -1,5 +1,3 @@
-//go:build tlv
-
 package packer
 
 import (
@@ -28,7 +26,7 @@ type MessagePacker struct {
 	BasePacker
 }
 
-func (c *MessagePacker) SendMsg(msgID protocol.ProtocolID, msgData protocol.Protocol) error {
+func (p *MessagePacker) Pack(msgID protocol.ProtocolID, msgData protocol.ProtocolMsg) error {
 	msgValueByte, err := protocol.Marshal(msgData)
 	if len(msgValueByte) == 0 {
 		return fmt.Errorf("marshal msg %v %v got empty slice", msgID, msgData)
@@ -50,12 +48,12 @@ func (c *MessagePacker) SendMsg(msgID protocol.ProtocolID, msgData protocol.Prot
 	// tlvPackMsg[TLVPacketDataTagSize+TLVPacketDataLengthSize:]
 	copy(tlvPacket[TLVPacketDataTagSize+TLVPacketDataLengthSize:], msgValueByte)
 
-	writeLength, writeError := c.BasePacker.Connection.Write(tlvPacket)
+	writeLength, writeError := p.Connection.Write(tlvPacket)
 	if writeError != nil {
 		return writeError
 	} else if writeLength != tlvPacketLength {
 		return fmt.Errorf("write msg %v %v length %v not equal packet length %v", msgID, msgData, writeLength, msgByteDataLength)
 	}
 
-	return writeError
+	return nil
 }
