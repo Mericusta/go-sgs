@@ -9,59 +9,59 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServerHandler func(IServerContext, protocol.Protocol)
+type ServerHandler func(IServerContext, protocol.ProtocolMsg)
 
 var serverHandlerMgr map[protocol.ProtocolID]ServerHandler
 
 func RegisterHandler() {
 	serverHandlerMgr = make(map[protocol.ProtocolID]ServerHandler)
-	serverHandlerMgr[msg.C2SMsgID_Login] = func(ctx IServerContext, p protocol.Protocol) {
+	serverHandlerMgr[msg.C2SMsgID_Login] = func(ctx IServerContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SLoginData)
 		if c2sMsg == nil || !ok {
 			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
 			return
 		}
 
-		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Link().UID(), model.NewUser())
+		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Linker().UID(), model.NewUser())
 		if exists {
-			logger.Logger().Warn("server user manager link already exists", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Warn("server user manager link already exists", zap.Uint64("link", ctx.Linker().UID()))
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			logger.Logger().Error("server user manager uid value type is not *model.User", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Error("server user manager uid value type is not *model.User", zap.Uint64("link", ctx.Linker().UID()))
 			return
 		}
 
-		logger.Logger().Info("link as user login with counter", zap.Uint64("link", ctx.Link().UID()), zap.Int("counter", user.Counter()))
+		logger.Logger().Info("link as user login with counter", zap.Uint64("link", ctx.Linker().UID()), zap.Int("counter", user.Counter()))
 
 		s2cMsg := &msg.S2CLoginData{
 			User: &msg.User{
 				Counter: user.Counter(),
 			},
 		}
-		ctx.Link().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
+		ctx.Linker().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
 	}
-	serverHandlerMgr[msg.C2SMsgID_Logout] = func(ctx IServerContext, p protocol.Protocol) {
+	serverHandlerMgr[msg.C2SMsgID_Logout] = func(ctx IServerContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SLogout)
 		if c2sMsg == nil || !ok {
 			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Logout), zap.Any("data", p))
 			return
 		}
 
-		logger.Logger().Info("link as user logout", zap.Uint64("link", ctx.Link().UID()))
+		logger.Logger().Info("link as user logout", zap.Uint64("link", ctx.Linker().UID()))
 
-		ctx.Link().Exit()
-		ctx.UserMgr().Delete(ctx.Link().UID())
+		ctx.Linker().Exit()
+		ctx.UserMgr().Delete(ctx.Linker().UID())
 	}
 }
 
-type UserHandler func(IUserContext, protocol.Protocol)
+type UserHandler func(IUserContext, protocol.ProtocolMsg)
 
 var userHandlerMgr map[protocol.ProtocolID]UserHandler
 
 func RegisterUserHandler() {
 	userHandlerMgr = make(map[protocol.ProtocolID]UserHandler)
-	userHandlerMgr[msg.C2SMsgID_Business] = func(ctx IUserContext, p protocol.Protocol) {
+	userHandlerMgr[msg.C2SMsgID_Business] = func(ctx IUserContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SBusinessData)
 		if c2sMsg == nil || !ok {
 			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Business), zap.Any("data", p))
@@ -69,12 +69,12 @@ func RegisterUserHandler() {
 		}
 
 		ctx.User().CounterIncrease()
-		logger.Logger().Info("link as user recv business key value1 value2", zap.Uint64("link", ctx.Link().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
+		logger.Logger().Info("link as user recv business key value1 value2", zap.Uint64("link", ctx.Linker().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
 
 		s2cMsg := &msg.S2CBusinessData{
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,
 		}
-		ctx.Link().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
+		ctx.Linker().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
 
 		if ctx.User().Counter() == controlCount {
 			panic("server panic here")
@@ -82,6 +82,6 @@ func RegisterUserHandler() {
 
 		// time.Sleep(time.Second * 10)
 		// // condition: server exit actively
-		// ctx.Link().Exit()
+		// ctx.Linker().Exit()
 	}
 }

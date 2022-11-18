@@ -25,8 +25,8 @@ func RegisterRobotMgrHandler() {
 			return
 		}
 
-		robot := model.NewRobot(ctx.Link().UID())
-		ctx.RobotMgr().Store(ctx.Link().UID(), robot)
+		robot := model.NewRobot(ctx.Linker().UID())
+		ctx.RobotMgr().Store(ctx.Linker().UID(), robot)
 
 		logger.Logger().Info("robot login", zap.Uint64("ID", robot.ID()))
 

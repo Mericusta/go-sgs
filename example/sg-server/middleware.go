@@ -34,14 +34,14 @@ func NewUserMiddleware(sgServer *SGServer) *UserMiddleware {
 
 func (m *UserMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := userHandlerMgr[e.ID()]; handler != nil && has {
-		iUser, has := m.sgServer.UserMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
+		iUser, has := m.sgServer.UserMgr().Load(ctx.Linker().UID()) // TODO: 性能瓶颈
 		if !has {
-			logger.Logger().Error("can not find user by link", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Error("can not find user by link", zap.Uint64("link", ctx.Linker().UID()))
 			return false
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			logger.Logger().Error("server user manager link value type is not *User", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Error("server user manager link value type is not *User", zap.Uint64("link", ctx.Linker().UID()))
 			return false
 		}
 		handler(NewUserContext(ctx, user), e.Data())

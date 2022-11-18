@@ -34,14 +34,14 @@ func NewRobotMiddleware(sgRobot *SGRobot) *RobotMiddleware {
 
 func (m *RobotMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := robotHandlerMgr[e.ID()]; handler != nil && has {
-		iRobot, has := m.sgRobot.RobotMgr().Load(ctx.Link().UID()) // TODO: 性能瓶颈
+		iRobot, has := m.sgRobot.RobotMgr().Load(ctx.Linker().UID()) // TODO: 性能瓶颈
 		if !has {
-			logger.Logger().Error("can not find robot by link", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Error("can not find robot by link", zap.Uint64("link", ctx.Linker().UID()))
 			return false
 		}
 		robot, ok := iRobot.(*model.Robot)
 		if !ok {
-			logger.Logger().Error("robot manager link value type is not *Robot", zap.Uint64("link", ctx.Link().UID()))
+			logger.Logger().Error("robot manager link value type is not *Robot", zap.Uint64("link", ctx.Linker().UID()))
 			return false
 		}
 		handler(NewRobotContext(ctx, robot), e.Data())

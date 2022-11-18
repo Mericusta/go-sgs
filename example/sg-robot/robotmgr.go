@@ -23,7 +23,7 @@ func NewRobotRunMiddleware(wg *sync.WaitGroup) *robotRunMiddleware {
 }
 
 func (rrm *robotRunMiddleware) Do(ctx dispatcher.IContext) bool {
-	logger.Logger().Info("robot dial done", zap.Uint64("link", ctx.Link().UID()))
+	logger.Logger().Info("robot dial done", zap.Uint64("link", ctx.Linker().UID()))
 	rrm.wg.Done()
 	return true
 }
