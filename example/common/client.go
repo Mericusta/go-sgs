@@ -17,7 +17,7 @@ type clientUserData struct {
 
 func NewClient(l *link.Linker, index int) *Client {
 	return &Client{
-		Link: l,
+		Linker: l,
 		data: &clientUserData{
 			index:     index,
 			expectMap: make(map[int]int),

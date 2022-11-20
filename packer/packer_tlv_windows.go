@@ -9,7 +9,7 @@ import (
 	"github.com/Mericusta/go-sgs/protocol"
 )
 
-func (p *MessagePacker) Unpack() (protocol.ProtocolID, protocol.Protocol, error) {
+func (p *MessagePacker) Unpack() (protocol.ProtocolID, protocol.ProtocolMsg, error) {
 	tagBytes := make([]byte, TLVPacketDataTagSize)
 	_, readTagError := p.Connection.Read(tagBytes)
 	if readTagError != nil {

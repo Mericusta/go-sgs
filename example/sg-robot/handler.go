@@ -12,13 +12,13 @@ import (
 	"go.uber.org/zap"
 )
 
-type RobotMgrHandler func(IRobotMgrContext, protocol.Protocol)
+type RobotMgrHandler func(IRobotMgrContext, protocol.ProtocolMsg)
 
 var robotMgrHandlerMrg map[protocol.ProtocolID]RobotMgrHandler
 
 func RegisterRobotMgrHandler() {
 	robotMgrHandlerMrg = make(map[protocol.ProtocolID]RobotMgrHandler)
-	robotMgrHandlerMrg[msg.S2CMsgID_Login] = func(ctx IRobotMgrContext, p protocol.Protocol) {
+	robotMgrHandlerMrg[msg.S2CMsgID_Login] = func(ctx IRobotMgrContext, p protocol.ProtocolMsg) {
 		s2cMsg, ok := p.(*msg.S2CLoginData)
 		if s2cMsg == nil || !ok {
 			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
@@ -36,18 +36,18 @@ func RegisterRobotMgrHandler() {
 		c2sMsg := &msg.C2SBusinessData{
 			Key: key, Value1: v1, Value2: v2,
 		}
-		ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
+		ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
 		logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", robot.ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 	}
 }
 
-type RobotHandler func(IRobotContext, protocol.Protocol)
+type RobotHandler func(IRobotContext, protocol.ProtocolMsg)
 
 var robotHandlerMgr map[protocol.ProtocolID]RobotHandler
 
 func RegisterRobotHandler() {
 	robotHandlerMgr = make(map[protocol.ProtocolID]RobotHandler)
-	robotHandlerMgr[msg.S2CMsgID_Business] = func(ctx IRobotContext, p protocol.Protocol) {
+	robotHandlerMgr[msg.S2CMsgID_Business] = func(ctx IRobotContext, p protocol.ProtocolMsg) {
 		s2cMsg, ok := p.(*msg.S2CBusinessData)
 		if s2cMsg == nil || !ok {
 			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.S2CMsgID_Business), zap.Any("data", p))
@@ -74,7 +74,7 @@ func RegisterRobotHandler() {
 			c2sMsg := &msg.C2SBusinessData{
 				Key: key, Value1: v1, Value2: v2,
 			}
-			ctx.Link().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
+			ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
 			logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 
 			if ctx.Robot().Counter() == 6 {
@@ -84,7 +84,7 @@ func RegisterRobotHandler() {
 
 			// condition: client exit actively
 			c2sMsg := &msg.C2SLogout{}
-			ctx.Link().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
+			ctx.Linker().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
 			logger.Logger().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
 		}
 	}

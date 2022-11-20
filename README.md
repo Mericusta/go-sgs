@@ -91,7 +91,7 @@
 
 - 通常指一个定义在应用层的符合类型的函数
 - 通常需要一个标识来选择执行哪个处理器，标识可以为 `ProtocolID` 等
-- 处理器按照上下文是否带有 linker 分为两种
+- 处理器按照上下文是否带有 `linker` 分为两种
     - 上下文不带有 linker：服务层处理器
     - 上下文带有 linker：应用层处理器
 
@@ -114,46 +114,23 @@
     - 当本地应用层被动退出时，如本地断网：会从栈底依次向栈顶退出，此时可以处理 send/recv 中的内容，因为执行的主体仍存在
     保险起见，都不处理
 
----
+##### Acceptor 接收器
+
+> github.com/Mericusta/go-sgs/acceptor
+
+- 产生 `tcp socket`，即 `net.Conn` 的方式
+- 分为两类：客户端和服务器
+    - 客户端通过 `net.Dial` 主动建立 `tcp socket`
+    - 服务端通过 `net.Listen` 被动建立 `tcp socket`
 
 ##### Framework 框架
 
 > github.com/Mericusta/go-sgs/framework
 
-- framework 框架，对外服务的基本框架，封装底层细节，控制运行时程序资源分配
-
-##### Acceptor
-
-> github.com/Mericusta/go-sgs/acceptor
-
-- acceptor 接收器，产生 net.Conn 的方式
-    - 服务器接收器：通过 net.Listener.Accept() 方法产生 net.Conn
-    - 客户端接收器：通过 net.DialTimeout() 方法产生 net.Conn
-
-- 一个 framework 可以同时支持多个接收器
-- Acceptor 关闭不代表 net.Conn 需要关闭
-
-##### Middleware
-
-> middleware 指的是针对某一种行为的中间件 
-> middleware 作为连接媒介，必须定义在某个 concept 中
-
-###### Handle Middleware
-
-> github.com/Mericusta/go-sgs/dispatcher
-> 针对 dispatcher 的 handle 行为的中间件
-
-- handle 中间件
-    - 流程控制
-    - 多个中间件：
-        - 层层传递？
-            - Framework 层如何知道层级之间的关系？
-        - 平级传递？
-            - 中间件有相互依赖如何处理？（MiddlewareA -> MiddlewareB 而 MiddlewareB -x-> MiddlewareA）
-        - 中间件排序？
-            - 添加中间件的时候如何知道其他中间件的信息？
-        - 通过 protocol ID 把消息路由到不同的 middleware 上去？
-- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
+- 对外服务的基本框架，封装底层细节，控制运行时程序资源分配
+- 持有若干 handler 的实例
+- 持有若干 dispatcher 的实例
+- 持有若干 acceptor 的实例
 
 ---
 
@@ -165,6 +142,7 @@
 - TODO: 中间件：控制资源模型
 - TODO: 中间件：隔离框架层和应用层上下文传递
 - TODO: 中间件：支持断点调试（断点会阻塞进程）
+- TODO: 中间件：处理业务层循环调用
 - Link
     - 相同 linker，在经过不同编译条件的情况下，可以处理不同格式的 packet
     - [DEPRECATED]相同 linker，在不经过编译的情况下，可以处理不同格式的 packet
@@ -203,25 +181,43 @@
 
 #### Resource Model 资源模型
 
-- use `middleware` as server option to control resources model
+- 资源模型1：`1 - 1 - 3`
+    - 1 客户端
+    - 1 `tcp socket`
+    - 3 协程
+        - `recv-goroutine`
+        - `send-goroutine`
+        - `logic-goroutine`
 
-- resource model 1: `1 - 1 - 3`
-    - generally no-need `dispatcher`, or `dispatcher` is logic goroutine
-    - 1 client -> 1 socket -> 3 goroutine: recv/send/logic
+- 资源模型2：`1 - 1 - 2 - 1/n`
+    - 1 客户端
+    - 1 `tcp socket`
+    - 2 协程
+        - `recv-goroutine`
+        - `send-goroutine`
+    - 1/n 协程
+        - n 个 `linker` 共享 `logic-goroutine`
 
-- resource model 2: `1 - 1 - 2 - 1/n`
-    - need logic `dispatcher`, n recv/send goroutine share one dispatcher
-    - 1 client -> 1 socket -> 2 goroutine: recv/send -> logic: 1/n goroutine
+- 资源模型3：`1 - 1 - 1/m - 1/n`
+    - 1 客户端
+    - 1 `tcp socket`
+    - 1 协程
+        - `recv-goroutine`
+    - 1/m 协程
+        - m 个 `linker` 共享 `send-goroutine`
+    - 1/n 协程
+        - n 个 `linker` 共享 `logic-goroutine`
 
-- resource model 3: `1 - 1 - 1/n - 1/m`
-    - need multi kinds `dispatcher`, logic dispatcher and send dispatcher
-    - 1 client -> 1 socket -> 1 goroutine: recv -> logic: 1/n goroutine -> send: 1/m goroutine
-
-
-- resource model 4: `1 - 1/l - 1/m - 1/n`
-    - need multi kinds `dispatcher`, logic dispatcher, send dispatcher, recv dispatcher
-    - 1 client -> 1 socket -> 1/l goroutine: recv -> logic: 1/m goroutine -> send: 1/n goroutine
-    - Note: expect golang feature: recv-channel without blocking, like try lock -> try recv-channel
+- 资源模型4：`1 - 1 - 1/l - 1/m - 1/n`
+    - 1 客户端
+    - 1 `tcp socket`
+    - 1/l 协程
+        - l 个 `linker` 共享 `recv-goroutine`
+    - 1/m 协程
+        - m 个 `linker` 共享 `send-goroutine`
+    - 1/n 协程
+        - n 个 `linker` 共享 `logic-goroutine`
+    - 注：需要 golang 特性支持：无阻塞监听 channel 的方式，类似于 try lock
 
 #### Call Chain Level 调用链层级
 
@@ -238,34 +234,45 @@
 - 框架层和应用层要有互相控住的方式，框架层 tcp socket 断开之后要控制应用层退出，应用层退出之后要断开框架层 tcp socket
 - TODO: 框架层和应用层的退出应当有序
 
-### Process
+#### Data Transport Process 数据传输过程
 
 - client - server transport process
     - os: tcp socket -> recv goroutine: unpack []byte, unmarshal -> logic goroutine: handler
     ```
-    ┌──────────────┬────────────────────────────────────┬─────────────────────┬─────────────────────────────┬──────────────────────────┐
-    │      OS      │       recv-goroutine: packer       │   recv-goroutine    │ logic-goroutine: dispatcher │ logic-goroutine: handler │
-    ├──────────────┼───────────────┬────────────────────┼─────────────────────┼─────────────────────────────┼──────────────────────────┤
-    │  TCP Socket  │ unpack []byte │ unmarshal protocol │ recv-channel <- Msg │     Msg <- recv-channel     │        handle Msg        │
-    └──────────────┴───────────────┴────────────────────┴─────────────────────┴─────────────────────────────┴──────────────────────────┘
+    ┌────────────┬────────────────────────┬───────────────────────┬─────────────────────────────┬──────────────────────────┐
+    │     OS     │ recv-goroutine: packer │    recv-goroutine     │ logic-goroutine: dispatcher │ logic-goroutine: handler │
+    ├────────────┼────────────────────────┼───────────────────────┼─────────────────────────────┼──────────────────────────┤
+    │ TCP Socket │   []byte -> protocol   │ event -> recv-channel │    recv-channel -> event    │ protocol msg -> handler  │
+    └────────────┴────────────────────────┴───────────────────────┴─────────────────────────────┴──────────────────────────┘
     ```
     - logic goroutine: handler -> send goroutine: pack []byte, marshal -> os: tcp socket
     ```
-    ┌──────────────────────────┬─────────────────────────────┬─────────────────────┬────────────────────────────────┬────────────┐
-    │ logic-goroutine: handler │ logic-goroutine: dispatcher │   send-goroutine    │     send-goroutine: packer     │     OS     │
-    ├──────────────────────────┼─────────────────────────────┼─────────────────────┼──────────────────┬─────────────┼────────────┤
-    │         make Msg         │     send-channel <- Msg     │ Msg <- send-channel │ marshal protocol │ pack []byte │ TCP Socket │
-    └──────────────────────────┴─────────────────────────────┴─────────────────────┴──────────────────┴─────────────┴────────────┘
+    ┌──────────────────────────┬─────────────────────────────┬───────────────────────┬────────────────────────┬────────────┐
+    │ logic-goroutine: handler │ logic-goroutine: dispatcher │    send-goroutine     │ send-goroutine: packer │     OS     │
+    ├──────────────────────────┼─────────────────────────────┼───────────────────────┼────────────────────────┼────────────┤
+    │ handler -> protocol msg  │    event -> send-channel    │ send-channel -> event │   protocol -> []byte   │ TCP Socket │
+    └──────────────────────────┴─────────────────────────────┴───────────────────────┴────────────────────────┴────────────┘
     ```
 
-- end process
-    - from server:
-        - server -> close listener -> close all link tcp socket connection -> cancel logic goroutine
-    - from client:
-        - TODO: client -> 
+#### Middleware 中间件
 
-- link end process:
-    - close link tcp socket connection
-        - recv goroutine receive, then close recv-channel and end recv-goroutine
-        - in server link, logic-goroutine will end by context canceler
-        - in client link, logic-goroutine will
+> middleware 指的是针对某一种行为的中间件 
+> middleware 作为连接媒介，必须定义在某个 concept 中
+
+#### Handle Middleware
+
+> github.com/Mericusta/go-sgs/dispatcher
+> 针对 dispatcher 的 handle 行为的中间件
+
+- handle 中间件
+    - 流程控制
+    - 多个中间件：
+        - 层层传递？
+            - Framework 层如何知道层级之间的关系？
+        - 平级传递？
+            - 中间件有相互依赖如何处理？（MiddlewareA -> MiddlewareB 而 MiddlewareB -x-> MiddlewareA）
+        - 中间件排序？
+            - 添加中间件的时候如何知道其他中间件的信息？
+        - 通过 protocol ID 把消息路由到不同的 middleware 上去？
+- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
+

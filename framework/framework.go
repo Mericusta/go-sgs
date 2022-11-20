@@ -24,9 +24,9 @@ type Framework struct {
 	linkCounter         uint
 	acceptorMgr         []acceptor.IAcceptor
 	connChan            chan net.Conn
-	handleMiddlewareMgr []dispatcher.HandleMiddleware
 	dispatcherMgr       map[uint64]*dispatcher.Dispatcher
 	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
+	handleMiddlewareMgr []dispatcher.HandleMiddleware
 	runMiddleware       RunMiddleware
 }
 
