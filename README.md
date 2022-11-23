@@ -256,17 +256,12 @@
 
 #### Middleware 中间件
 
-> middleware 指的是针对某一种行为的中间件 
-> middleware 作为连接媒介，必须定义在某个 concept 中
-
-#### Handle Middleware
-
-> github.com/Mericusta/go-sgs/dispatcher
-> 针对 dispatcher 的 handle 行为的中间件
-
-- handle 中间件
-    - 流程控制
-    - 多个中间件：
+- 中间件通常是一个定义了 Do 方法的接口
+- 中间件用来控制某些逻辑流程
+- 不同的中间件通常带有不同的上下文
+- 中间件必须定义在某个 Definition 中
+- 同一种中间件可以存在多个实例
+    - 同类多实例中间件
         - 层层传递？
             - Framework 层如何知道层级之间的关系？
         - 平级传递？
@@ -274,5 +269,20 @@
         - 中间件排序？
             - 添加中间件的时候如何知道其他中间件的信息？
         - 通过 protocol ID 把消息路由到不同的 middleware 上去？
-- TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
+        - TODO: 在中间件中，“在应用层容器中”查找唯一标识的数据，会遇到并发性能瓶颈
+
+##### Framework RunMiddleware 框架运行中间件
+
+- 提供给资源的管理者控制资源运行的相关流程
+- 每一个 `tcp socket` 代表的资源负载开始运行后，执行该中间件
+    - 比如：sg-robot 中，机器人管理器，可以通过中间件控制机器人行为，使得所有机器人在准备结束后一同发起登录请求
+
+##### Handler Middleware 处理器中间件
+
+- 应用层实现中间件接口，以控制 `handler` 执行的流程
+- 应用层可以通过同类多实例中间件拦截应用层的 `handler`
+    - 比如：sg-server 中的 `ServerMiddleware` 和 `UserMiddleware`
+    - 比如：sg-robot 中的 `RobotMgrMiddleware` 和 `RobotMiddleware`
+
+##### Recover Middleware 恢复中间件
 

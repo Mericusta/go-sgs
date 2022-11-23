@@ -4,7 +4,7 @@ import (
 	"github.com/Mericusta/go-sgs/event"
 )
 
-type HandleMiddleware interface {
+type HandlerMiddleware interface {
 	Do(IContext, *event.Event) bool
 }
 

@@ -12,11 +12,11 @@ import (
 type FrameworkHandler func(IContext, protocol.ProtocolMsg)
 
 type Dispatcher struct {
-	l                   *linker.Linker
-	eventChannel        chan *event.Event
-	handlerMgr          map[protocol.ProtocolID]FrameworkHandler
-	handleMiddlewareMgr []HandleMiddleware
-	recoverMiddleware   RecoverMiddleware
+	l                    *linker.Linker
+	eventChannel         chan *event.Event
+	handlerMgr           map[protocol.ProtocolID]FrameworkHandler
+	handlerMiddlewareMgr []HandlerMiddleware
+	recoverMiddleware    RecoverMiddleware
 }
 
 func New(l *linker.Linker) *Dispatcher {
@@ -35,8 +35,8 @@ func (d *Dispatcher) Dispatcher() *Dispatcher {
 	return d
 }
 
-func (d *Dispatcher) SetHandleMiddleware(hmdMgr []HandleMiddleware) {
-	d.handleMiddlewareMgr = hmdMgr
+func (d *Dispatcher) SetHandleMiddleware(hmdMgr []HandlerMiddleware) {
+	d.handlerMiddlewareMgr = hmdMgr
 }
 
 func (d *Dispatcher) SetRecoverMiddleware() {
@@ -45,7 +45,7 @@ func (d *Dispatcher) SetRecoverMiddleware() {
 
 func (d *Dispatcher) HandleLogic() {
 	loopCounter := 0
-	logger.Logger().Info("begin logic-goroutine", zap.Uint64("link", d.Linker().UID()))
+	logger.Logger().Info("begin logic-goroutine", zap.Uint64("linker", d.Linker().UID()))
 LOOP:
 	for {
 		logger.Logger().Debug("HandleLogic begin loop", zap.Int("loopCounter", loopCounter))
@@ -54,7 +54,7 @@ LOOP:
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
 			// 本地主动断开
 			if !ok {
-				logger.Logger().Info("event channel closed", zap.Uint64("link", d.Linker().UID()))
+				logger.Logger().Info("event channel closed", zap.Uint64("linker", d.Linker().UID()))
 				// d.Linker().Exit() // 关闭 connection，退出发送协程
 				// 关闭 connection 会导致接收协程退出
 				break LOOP
@@ -62,7 +62,7 @@ LOOP:
 			}
 
 			// 发送逻辑
-			logger.Logger().Info("handle send-event", zap.Uint64("link", d.Linker().UID()), zap.Any("event", e))
+			logger.Logger().Info("handle send-event", zap.Uint64("linker", d.Linker().UID()), zap.Any("event", e))
 			// if d.handleIntercept(e) {
 			// 	handler := d.handlerMgr[e.ID()]
 			// 	if handler == nil {
@@ -78,21 +78,21 @@ LOOP:
 			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connection（重复关闭）
 			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
 			if !ok {
-				logger.Logger().Info("recv-channel closed", zap.Uint64("link", d.Linker().UID()))
+				logger.Logger().Info("recv-channel closed", zap.Uint64("linker", d.Linker().UID()))
 				d.Linker().Exit() // 关闭 connection
-				logger.Logger().Info("close event-channel", zap.Uint64("link", d.Linker().UID()))
+				logger.Logger().Info("close event-channel", zap.Uint64("linker", d.Linker().UID()))
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程
 				// TODO: 是否需要处理 eventChannel 中剩余的内容？
 			}
 
 			// 接收逻辑
-			logger.Logger().Info("handle recv-event", zap.Uint64("link", d.Linker().UID()), zap.Any("event", e))
+			logger.Logger().Info("handle recv-event", zap.Uint64("linker", d.Linker().UID()), zap.Any("event", e))
 			d.handle(e)
-			logger.Logger().Debug("handle done", zap.Uint64("link", d.Linker().UID()))
+			logger.Logger().Debug("handle done", zap.Uint64("linker", d.Linker().UID()))
 		}
 	}
-	logger.Logger().Info("end logic-goroutine", zap.Uint64("link", d.Linker().UID()))
+	logger.Logger().Info("end logic-goroutine", zap.Uint64("linker", d.Linker().UID()))
 }
 
 func (d *Dispatcher) handle(e *event.Event) {
@@ -113,7 +113,7 @@ func (d *Dispatcher) handle(e *event.Event) {
 }
 
 func (d *Dispatcher) handleIntercept(e *event.Event) bool {
-	for _, handleMiddleware := range d.handleMiddlewareMgr {
+	for _, handleMiddleware := range d.handlerMiddlewareMgr {
 		if !handleMiddleware.Do(d, e) {
 			return false
 		}

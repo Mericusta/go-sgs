@@ -26,7 +26,7 @@ type Framework struct {
 	connChan            chan net.Conn
 	dispatcherMgr       map[uint64]*dispatcher.Dispatcher
 	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
-	handleMiddlewareMgr []dispatcher.HandleMiddleware
+	handleMiddlewareMgr []dispatcher.HandlerMiddleware
 	runMiddleware       RunMiddleware
 }
 
@@ -102,7 +102,7 @@ func (f *Framework) run(connection net.Conn) {
 	l := link.New(connection)
 	d := dispatcher.New(l)
 	f.dispatcherMgr[l.UID()] = d
-	logger.Logger().Info("create link and its dispatcher", zap.Uint64("link", l.UID()))
+	logger.Logger().Info("create link and its dispatcher", zap.Uint64("linker", l.UID()))
 	d.SetHandleMiddleware(f.handleMiddlewareMgr)
 	go l.HandleRecv()
 	go l.HandleSend()
@@ -116,7 +116,7 @@ func (f *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatche
 	f.handlerMgr[msgID] = handler
 }
 
-func (f *Framework) AppendHandleMiddleware(hmd ...dispatcher.HandleMiddleware) {
+func (f *Framework) AppendHandleMiddleware(hmd ...dispatcher.HandlerMiddleware) {
 	f.handleMiddlewareMgr = append(f.handleMiddlewareMgr, hmd...)
 }
 

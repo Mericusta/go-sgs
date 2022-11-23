@@ -23,7 +23,7 @@ func NewRobotRunMiddleware(wg *sync.WaitGroup) *robotRunMiddleware {
 }
 
 func (rrm *robotRunMiddleware) Do(ctx dispatcher.IContext) bool {
-	logger.Logger().Info("robot dial done", zap.Uint64("link", ctx.Linker().UID()))
+	logger.Logger().Info("robot dial done", zap.Uint64("linker", ctx.Linker().UID()))
 	rrm.wg.Done()
 	return true
 }
@@ -62,7 +62,7 @@ func (sgr *SGRobot) Run() {
 	go sgr.Framework.Run()
 	sgr.dialWaitGroup.Wait()
 	sgr.ForRangeDispatcher(func(u uint64, d *dispatcher.Dispatcher) bool {
-		logger.Logger().Info("robot send event", zap.Uint64("link", u), zap.Int("ID", msg.C2SMsgID_Login))
+		logger.Logger().Info("robot send event", zap.Uint64("linker", u), zap.Int("ID", msg.C2SMsgID_Login))
 		d.Send(event.New(
 			protocol.ProtocolID(msg.C2SMsgID_Login),
 			&msg.C2SLoginData{AccountID: u},
