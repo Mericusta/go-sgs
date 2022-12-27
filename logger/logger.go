@@ -16,6 +16,6 @@ func init() {
 	}
 }
 
-func Logger() *zap.Logger {
+func Log() *zap.Logger {
 	return logger
 }

@@ -53,7 +53,7 @@ func (f *Framework) Run() {
 	case acceptorCount == 1:
 		f.singleRun()
 	default:
-		logger.Logger().Warn("framework not have any acceptor")
+		logger.Log().Warn("framework not have any acceptor")
 	}
 }
 
@@ -64,15 +64,15 @@ LOOP:
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Logger().Info("framework single acceptor closed")
+				logger.Log().Info("framework single acceptor closed")
 				break LOOP
 			}
-			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
+			logger.Log().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.run(connection)
 	}
-	logger.Logger().Info("single acceptor end accept-goroutine")
+	logger.Log().Info("single acceptor end accept-goroutine")
 }
 
 func (f *Framework) accept(a acceptor.IAcceptor) {
@@ -81,15 +81,15 @@ LOOP:
 		connection, acceptError := a.Accept()
 		if acceptError != nil {
 			if acceptError.(*net.OpError).Err == net.ErrClosed {
-				logger.Logger().Info("framework acceptor closed", zap.Int("acceptor", a.ID()))
+				logger.Log().Info("framework acceptor closed", zap.Int("acceptor", a.ID()))
 				break LOOP
 			}
-			logger.Logger().Error("acceptor accept connection occurs error", zap.Error(acceptError))
+			logger.Log().Error("acceptor accept connection occurs error", zap.Error(acceptError))
 			continue
 		}
 		f.connChan <- connection
 	}
-	logger.Logger().Info("acceptor end accept-goroutine", zap.Int("acceptor", a.ID()))
+	logger.Log().Info("acceptor end accept-goroutine", zap.Int("acceptor", a.ID()))
 }
 
 func (f *Framework) recvConn() {
@@ -102,7 +102,7 @@ func (f *Framework) run(connection net.Conn) {
 	l := link.New(connection)
 	d := dispatcher.New(l)
 	f.dispatcherMgr[l.UID()] = d
-	logger.Logger().Info("create link and its dispatcher", zap.Uint64("linker", l.UID()))
+	logger.Log().Info("create link and its dispatcher", zap.Uint64("linker", l.UID()))
 	d.SetHandleMiddleware(f.handleMiddlewareMgr)
 	go l.HandleRecv()
 	go l.HandleSend()
@@ -132,12 +132,12 @@ func (f *Framework) ForRangeDispatcher(handle func(uint64, *dispatcher.Dispatche
 
 // Exit end acceptor, all link connection recv goroutine
 func (f *Framework) Exit() {
-	logger.Logger().Info("close acceptor")
+	logger.Log().Info("close acceptor")
 	var err error
 	for _, acceptor := range f.acceptorMgr {
 		err = acceptor.Close()
 		if err != nil {
-			logger.Logger().Error("close acceptor occurs error", zap.Error(err))
+			logger.Log().Error("close acceptor occurs error", zap.Error(err))
 		}
 	}
 	// 只需要退出 dispatcher，dispatcher 退出会引起
@@ -150,11 +150,11 @@ func (f *Framework) Hold() {
 	s := make(chan os.Signal, 10)
 	signal.Notify(s, os.Interrupt)
 	<-s
-	logger.Logger().Info("stop signal")
+	logger.Log().Info("stop signal")
 	signal.Stop(s)
 	close(s)
-	logger.Logger().Info("exit framework")
+	logger.Log().Info("exit framework")
 	f.Exit()
-	logger.Logger().Info("waitting 5 seconds")
+	logger.Log().Info("waitting 5 seconds")
 	time.Sleep(time.Second * 5)
 }

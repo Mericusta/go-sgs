@@ -19,7 +19,7 @@ func main() {
 	sgs := NewSGServer()
 
 	// run server
-	logger.Logger().Info("SG-Server run")
+	logger.Log().Info("SG-Server run")
 	go sgs.Run()
 
 	// hold server

@@ -25,7 +25,7 @@ func NewServerAcceptor(network, addr string, tcpKeepAlive time.Duration) IAccept
 		listener, listenError = net.Listen(network, addr)
 	}
 	if listener == nil || listenError != nil {
-		logger.Logger().Error("listen tcp addr occurs error", zap.String("addr", addr), zap.Error(listenError))
+		logger.Log().Error("listen tcp addr occurs error", zap.String("addr", addr), zap.Error(listenError))
 		return nil
 	}
 	return &ServerAcceptor{

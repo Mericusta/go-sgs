@@ -18,21 +18,21 @@ func RegisterHandler() {
 	serverHandlerMgr[msg.C2SMsgID_Login] = func(ctx IServerContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SLoginData)
 		if c2sMsg == nil || !ok {
-			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
+			logger.Log().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
 			return
 		}
 
 		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Linker().UID(), model.NewUser())
 		if exists {
-			logger.Logger().Warn("server user manager link already exists", zap.Uint64("linker", ctx.Linker().UID()))
+			logger.Log().Warn("server user manager link already exists", zap.Uint64("linker", ctx.Linker().UID()))
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			logger.Logger().Error("server user manager uid value type is not *model.User", zap.Uint64("linker", ctx.Linker().UID()))
+			logger.Log().Error("server user manager uid value type is not *model.User", zap.Uint64("linker", ctx.Linker().UID()))
 			return
 		}
 
-		logger.Logger().Info("link as user login with counter", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("counter", user.Counter()))
+		logger.Log().Info("link as user login with counter", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("counter", user.Counter()))
 
 		s2cMsg := &msg.S2CLoginData{
 			User: &msg.User{
@@ -44,11 +44,11 @@ func RegisterHandler() {
 	serverHandlerMgr[msg.C2SMsgID_Logout] = func(ctx IServerContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SLogout)
 		if c2sMsg == nil || !ok {
-			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Logout), zap.Any("data", p))
+			logger.Log().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Logout), zap.Any("data", p))
 			return
 		}
 
-		logger.Logger().Info("link as user logout", zap.Uint64("linker", ctx.Linker().UID()))
+		logger.Log().Info("link as user logout", zap.Uint64("linker", ctx.Linker().UID()))
 
 		ctx.Linker().Exit()
 		ctx.UserMgr().Delete(ctx.Linker().UID())
@@ -64,12 +64,12 @@ func RegisterUserHandler() {
 	userHandlerMgr[msg.C2SMsgID_Business] = func(ctx IUserContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SBusinessData)
 		if c2sMsg == nil || !ok {
-			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Business), zap.Any("data", p))
+			logger.Log().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Business), zap.Any("data", p))
 			return
 		}
 
 		ctx.User().CounterIncrease()
-		logger.Logger().Info("link as user recv business key value1 value2", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
+		logger.Log().Info("link as user recv business key value1 value2", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
 
 		s2cMsg := &msg.S2CBusinessData{
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,

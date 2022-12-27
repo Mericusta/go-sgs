@@ -20,7 +20,7 @@ func main() {
 	sgr := NewSGRobot(robotCount)
 
 	// run robot
-	logger.Logger().Info("SG-Robot run")
+	logger.Log().Info("SG-Robot run")
 	go sgr.Run()
 
 	// hold robot

@@ -21,14 +21,14 @@ func RegisterRobotMgrHandler() {
 	robotMgrHandlerMrg[msg.S2CMsgID_Login] = func(ctx IRobotMgrContext, p protocol.ProtocolMsg) {
 		s2cMsg, ok := p.(*msg.S2CLoginData)
 		if s2cMsg == nil || !ok {
-			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
+			logger.Log().Error("msg ID data not match", zap.Int("ID", msg.C2SMsgID_Login), zap.Any("data", p))
 			return
 		}
 
 		robot := model.NewRobot(ctx.Linker().UID())
 		ctx.RobotMgr().Store(ctx.Linker().UID(), robot)
 
-		logger.Logger().Info("robot login", zap.Uint64("ID", robot.ID()))
+		logger.Log().Info("robot login", zap.Uint64("ID", robot.ID()))
 
 		key := int(time.Now().UnixNano())
 		v1, v2 := rand.Intn(1024), rand.Intn(1024)
@@ -37,7 +37,7 @@ func RegisterRobotMgrHandler() {
 			Key: key, Value1: v1, Value2: v2,
 		}
 		ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
-		logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", robot.ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
+		logger.Log().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", robot.ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 	}
 }
 
@@ -50,17 +50,17 @@ func RegisterRobotHandler() {
 	robotHandlerMgr[msg.S2CMsgID_Business] = func(ctx IRobotContext, p protocol.ProtocolMsg) {
 		s2cMsg, ok := p.(*msg.S2CBusinessData)
 		if s2cMsg == nil || !ok {
-			logger.Logger().Error("msg ID data not match", zap.Int("ID", msg.S2CMsgID_Business), zap.Any("data", p))
+			logger.Log().Error("msg ID data not match", zap.Int("ID", msg.S2CMsgID_Business), zap.Any("data", p))
 			return
 		}
 
 		if v, has := ctx.Robot().GetExpect(s2cMsg.Key); !has || v != s2cMsg.Result {
-			logger.Logger().Error("robot S2CMsgID_Business key result not match expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result), zap.Int("expect", v))
+			logger.Log().Error("robot S2CMsgID_Business key result not match expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result), zap.Int("expect", v))
 			return
 		}
 
 		ctx.Robot().DelExpect(s2cMsg.Key)
-		logger.Logger().Info("robot recv business key result, then delete expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result))
+		logger.Log().Info("robot recv business key result, then delete expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", s2cMsg.Key), zap.Int("result", s2cMsg.Result))
 
 		time.Sleep(time.Second)
 
@@ -75,7 +75,7 @@ func RegisterRobotHandler() {
 				Key: key, Value1: v1, Value2: v2,
 			}
 			ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
-			logger.Logger().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
+			logger.Log().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 
 			if ctx.Robot().Counter() == 6 {
 				panic("robot painc here")
@@ -85,7 +85,7 @@ func RegisterRobotHandler() {
 			// condition: client exit actively
 			c2sMsg := &msg.C2SLogout{}
 			ctx.Linker().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
-			logger.Logger().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
+			logger.Log().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
 		}
 	}
 }

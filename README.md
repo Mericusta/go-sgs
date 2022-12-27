@@ -163,7 +163,7 @@
 
 - 通过实现函数 `func Marshal(any) ([]byte, error)` 和 `func Unmarshal(ProtocolID, []byte) (any, error)` 来实现自定义数据交换协议
 
-#### Gourtine Resources 协程资源
+#### Goroutine Resources 协程资源
 
 - Recv-Goroutine 接收消息的 goroutine
     - 通过 `packer` 接收 `tcp socket` 收到的消息，并处理套接字异常
