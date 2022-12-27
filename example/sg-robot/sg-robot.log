@@ -1,0 +1,97 @@
+2022-12-27T17:57:46.370+0800	INFO	sg-robot/main.go:23	SG-Robot run
+2022-12-27T17:57:46.374+0800	INFO	framework/framework.go:108	create link and bind dispatcher	{"linker": 1672135066374503556, "dispatcher": 4, "newDispatcher": false}
+2022-12-27T17:57:46.375+0800	INFO	sg-robot/robotmgr.go:26	robot dial done	{"linker": 1672135066374503556}
+2022-12-27T17:57:46.375+0800	INFO	framework/framework.go:75	single acceptor end accept-goroutine
+2022-12-27T17:57:46.375+0800	INFO	sg-robot/robotmgr.go:65	robot send event	{"dispatcher": 4, "linker": 1672135066374503556, "ID": 1}
+2022-12-27T17:57:46.375+0800	INFO	dispatcher/dispatcher.go:128	send event to dispatcher linker	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:46.376+0800	INFO	linker/linker.go:64	begin recv goroutine	{"uid": 1672135066374503556}
+2022-12-27T17:57:46.376+0800	INFO	linker/linker.go:88	begin send-goroutine	{"uid": 1672135066374503556}
+2022-12-27T17:57:46.376+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 0}
+2022-12-27T17:57:46.376+0800	INFO	dispatcher/dispatcher.go:80	handle send-event	{"linker": 1672135066374503556}
+2022-12-27T17:57:46.376+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 1}
+2022-12-27T17:57:46.380+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:46.380+0800	INFO	sg-robot/handler.go:31	robot login	{"ID": 1672135066374503556}
+2022-12-27T17:57:46.380+0800	INFO	sg-robot/handler.go:40	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135066380539457, "value1": 545, "value2": 527, "expect": 1072}
+2022-12-27T17:57:46.380+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:46.380+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 2}
+2022-12-27T17:57:46.383+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:46.383+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135066380539457, "result": 1072}
+2022-12-27T17:57:47.384+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135067384308384, "value1": 455, "value2": 187, "expect": 642}
+2022-12-27T17:57:47.384+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:47.384+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 3}
+2022-12-27T17:57:47.386+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:47.387+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135067384308384, "result": 642}
+2022-12-27T17:57:48.387+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135068387713731, "value1": 385, "value2": 390, "expect": 775}
+2022-12-27T17:57:48.388+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:48.388+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 4}
+2022-12-27T17:57:48.389+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:48.389+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135068387713731, "result": 775}
+2022-12-27T17:57:49.390+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135069390797702, "value1": 825, "value2": 684, "expect": 1509}
+2022-12-27T17:57:49.391+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:49.391+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 5}
+2022-12-27T17:57:49.392+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:49.392+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135069390797702, "result": 1509}
+2022-12-27T17:57:50.393+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135070393080314, "value1": 840, "value2": 932, "expect": 1772}
+2022-12-27T17:57:50.393+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:50.393+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 6}
+2022-12-27T17:57:50.394+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:50.394+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135070393080314, "result": 1772}
+2022-12-27T17:57:51.395+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135071395445554, "value1": 198, "value2": 687, "expect": 885}
+2022-12-27T17:57:51.395+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:51.395+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 7}
+2022-12-27T17:57:51.396+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:51.397+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135071395445554, "result": 885}
+2022-12-27T17:57:52.397+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135072397755086, "value1": 930, "value2": 1009, "expect": 1939}
+2022-12-27T17:57:52.398+0800	WARN	dispatcher/dispatcher.go:102	dispatcher handle panic info and recover
+	{"panicInfo": "robot painc here"}
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handle.func1
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:102
+runtime.gopanic
+	/usr/local/go/src/runtime/panic.go:884
+main.RegisterRobotHandler.func1
+	/root/projects/go/src/github.com/go-sgs/example/sg-robot/handler.go:81
+main.(*RobotMiddleware).Do
+	/root/projects/go/src/github.com/go-sgs/example/sg-robot/middleware.go:47
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handleIntercept
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:118
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handle
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:106
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).HandleLogic
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:92
+2022-12-27T17:57:52.398+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:52.398+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 8}
+2022-12-27T17:57:52.399+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:52.400+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135072397755086, "result": 1939}
+2022-12-27T17:57:53.400+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135073400664056, "value1": 344, "value2": 282, "expect": 626}
+2022-12-27T17:57:53.401+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:53.401+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 9}
+2022-12-27T17:57:53.402+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:53.402+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135073400664056, "result": 626}
+2022-12-27T17:57:54.403+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135074403304069, "value1": 651, "value2": 149, "expect": 800}
+2022-12-27T17:57:54.403+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:54.403+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 10}
+2022-12-27T17:57:54.405+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:54.405+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135074403304069, "result": 800}
+2022-12-27T17:57:55.405+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135075405619785, "value1": 805, "value2": 994, "expect": 1799}
+2022-12-27T17:57:55.405+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:55.406+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 11}
+2022-12-27T17:57:55.406+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:55.407+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135075405619785, "result": 1799}
+2022-12-27T17:57:56.407+0800	INFO	sg-robot/handler.go:78	robot send business key value1 value2 wait expect	{"ID": 1672135066374503556, "key": 1672135076407478032, "value1": 783, "value2": 218, "expect": 1001}
+2022-12-27T17:57:56.407+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:56.408+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 12}
+2022-12-27T17:57:56.408+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:56.409+0800	INFO	sg-robot/handler.go:63	robot recv business key result, then delete expect	{"ID": 1672135066374503556, "key": 1672135076407478032, "result": 1001}
+2022-12-27T17:57:57.409+0800	INFO	sg-robot/handler.go:87	robot send logout	{"ID": 1672135066374503556}
+2022-12-27T17:57:57.410+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 4, "linker": 1672135066374503556}
+2022-12-27T17:57:57.410+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 4, "loopCounter": 13}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:70	tcp socket closed by remote	{"uid": 1672135066374503556}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:76	close recv-channel	{"uid": 1672135066374503556}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:83	end recv-goroutine	{"uid": 1672135066374503556}
+2022-12-27T17:57:57.412+0800	INFO	dispatcher/dispatcher.go:84	recv-channel closed	{"dispatcher": 4}
+2022-12-27T17:57:57.412+0800	INFO	dispatcher/dispatcher.go:85	close event-channel	{"dispatcher": 4}
+2022-12-27T17:57:57.412+0800	INFO	dispatcher/dispatcher.go:96	end logic-goroutine	{"dispatcher": 4}
+2022-12-27T18:34:33.495+0800	INFO	framework/framework.go:167	stop signal
+2022-12-27T18:34:33.497+0800	INFO	framework/framework.go:170	exit framework
+2022-12-27T18:34:33.497+0800	INFO	framework/framework.go:149	close acceptor
+2022-12-27T18:34:33.497+0800	INFO	framework/framework.go:172	waitting 5 seconds

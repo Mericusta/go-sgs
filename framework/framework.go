@@ -24,7 +24,7 @@ type Framework struct {
 	linkCounter         uint
 	acceptorMgr         []acceptor.IAcceptor
 	connChan            chan net.Conn
-	dispatcherMgr       map[uint64]*dispatcher.Dispatcher
+	dispatcherMgr       map[int]*dispatcher.Dispatcher
 	handlerMgr          map[protocol.ProtocolID]dispatcher.FrameworkHandler
 	handleMiddlewareMgr []dispatcher.HandlerMiddleware
 	runMiddleware       RunMiddleware
@@ -33,7 +33,7 @@ type Framework struct {
 func New() *Framework {
 	return &Framework{
 		connChan:      make(chan net.Conn, config.MaxConnectionCount),
-		dispatcherMgr: make(map[uint64]*dispatcher.Dispatcher, config.MaxConnectionCount),
+		dispatcherMgr: make(map[int]*dispatcher.Dispatcher, config.DispatcherLinkerCount),
 		handlerMgr:    make(map[protocol.ProtocolID]dispatcher.FrameworkHandler),
 	}
 }
@@ -100,16 +100,30 @@ func (f *Framework) recvConn() {
 
 func (f *Framework) run(connection net.Conn) {
 	l := link.New(connection)
-	d := dispatcher.New(l)
-	f.dispatcherMgr[l.UID()] = d
-	logger.Log().Info("create link and its dispatcher", zap.Uint64("linker", l.UID()))
-	d.SetHandleMiddleware(f.handleMiddlewareMgr)
+	d, hasD := f.dispatch(l.UID())
+	if err := d.Bind(l); err != nil {
+		logger.Log().Error("dispatcher bind link occurs error", zap.Uint64("linker", l.UID()), zap.Int("dispatcher", d.Index()), zap.Error(err))
+		return
+	}
+	logger.Log().Info("create link and bind dispatcher", zap.Uint64("linker", l.UID()), zap.Int("dispatcher", d.Index()), zap.Bool("newDispatcher", hasD))
 	go l.HandleRecv()
 	go l.HandleSend()
-	go d.HandleLogic()
-	if f.runMiddleware != nil {
-		f.runMiddleware.Do(d)
+	if !hasD {
+		d.SetHandleMiddleware(f.handleMiddlewareMgr)
+		go d.HandleLogic()
 	}
+	if f.runMiddleware != nil {
+		f.runMiddleware.Do(l)
+	}
+}
+
+func (f *Framework) dispatch(uid uint64) (*dispatcher.Dispatcher, bool) {
+	dispatcherIndex := int(uid) % (config.DispatcherCount)
+	_, has := f.dispatcherMgr[dispatcherIndex]
+	if !has {
+		f.dispatcherMgr[int(dispatcherIndex)] = dispatcher.New(dispatcherIndex)
+	}
+	return f.dispatcherMgr[int(dispatcherIndex)], has
 }
 
 func (f *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatcher.FrameworkHandler) {
@@ -125,8 +139,8 @@ func (f *Framework) SetRunMiddleware(rmd RunMiddleware) {
 }
 
 func (f *Framework) ForRangeDispatcher(handle func(uint64, *dispatcher.Dispatcher) bool) {
-	for id, d := range f.dispatcherMgr {
-		handle(id, d)
+	for _, d := range f.dispatcherMgr {
+		d.ForRangeLinker(handle)
 	}
 }
 

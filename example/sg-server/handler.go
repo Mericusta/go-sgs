@@ -22,24 +22,24 @@ func RegisterHandler() {
 			return
 		}
 
-		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.Linker().UID(), model.NewUser())
+		iUser, exists := ctx.UserMgr().LoadOrStore(ctx.UID(), model.NewUser())
 		if exists {
-			logger.Log().Warn("server user manager link already exists", zap.Uint64("linker", ctx.Linker().UID()))
+			logger.Log().Warn("server user manager link already exists", zap.Uint64("linker", ctx.UID()))
 		}
 		user, ok := iUser.(*model.User)
 		if !ok {
-			logger.Log().Error("server user manager uid value type is not *model.User", zap.Uint64("linker", ctx.Linker().UID()))
+			logger.Log().Error("server user manager uid value type is not *model.User", zap.Uint64("linker", ctx.UID()))
 			return
 		}
 
-		logger.Log().Info("link as user login with counter", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("counter", user.Counter()))
+		logger.Log().Info("link as user login with counter", zap.Uint64("linker", ctx.UID()), zap.Int("counter", user.Counter()))
 
 		s2cMsg := &msg.S2CLoginData{
 			User: &msg.User{
 				Counter: user.Counter(),
 			},
 		}
-		ctx.Linker().Send(event.New(msg.S2CMsgID_Login, s2cMsg))
+		ctx.Send(event.New(ctx.UID(), msg.S2CMsgID_Login, s2cMsg))
 	}
 	serverHandlerMgr[msg.C2SMsgID_Logout] = func(ctx IServerContext, p protocol.ProtocolMsg) {
 		c2sMsg, ok := p.(*msg.C2SLogout)
@@ -48,10 +48,10 @@ func RegisterHandler() {
 			return
 		}
 
-		logger.Log().Info("link as user logout", zap.Uint64("linker", ctx.Linker().UID()))
+		logger.Log().Info("link as user logout", zap.Uint64("linker", ctx.UID()))
 
-		ctx.Linker().Exit()
-		ctx.UserMgr().Delete(ctx.Linker().UID())
+		ctx.Exit()
+		ctx.UserMgr().Delete(ctx.UID())
 	}
 }
 
@@ -69,12 +69,12 @@ func RegisterUserHandler() {
 		}
 
 		ctx.User().CounterIncrease()
-		logger.Log().Info("link as user recv business key value1 value2", zap.Uint64("linker", ctx.Linker().UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
+		logger.Log().Info("link as user recv business key value1 value2", zap.Uint64("linker", ctx.UID()), zap.Int("key", c2sMsg.Key), zap.Int("value1", c2sMsg.Value1), zap.Int("value2", c2sMsg.Value2))
 
 		s2cMsg := &msg.S2CBusinessData{
 			Key: c2sMsg.Key, Result: c2sMsg.Value1 + c2sMsg.Value2,
 		}
-		ctx.Linker().Send(event.New(msg.S2CMsgID_Business, s2cMsg))
+		ctx.Send(event.New(ctx.UID(), msg.S2CMsgID_Business, s2cMsg))
 
 		if ctx.User().Counter() == controlCount {
 			panic("server panic here")

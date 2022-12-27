@@ -25,8 +25,8 @@ func RegisterRobotMgrHandler() {
 			return
 		}
 
-		robot := model.NewRobot(ctx.Linker().UID())
-		ctx.RobotMgr().Store(ctx.Linker().UID(), robot)
+		robot := model.NewRobot(ctx.UID())
+		ctx.RobotMgr().Store(ctx.UID(), robot)
 
 		logger.Log().Info("robot login", zap.Uint64("ID", robot.ID()))
 
@@ -36,7 +36,7 @@ func RegisterRobotMgrHandler() {
 		c2sMsg := &msg.C2SBusinessData{
 			Key: key, Value1: v1, Value2: v2,
 		}
-		ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
+		ctx.Send(event.New(ctx.UID(), msg.C2SMsgID_Business, c2sMsg))
 		logger.Log().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", robot.ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 	}
 }
@@ -74,17 +74,16 @@ func RegisterRobotHandler() {
 			c2sMsg := &msg.C2SBusinessData{
 				Key: key, Value1: v1, Value2: v2,
 			}
-			ctx.Linker().Send(event.New(msg.C2SMsgID_Business, c2sMsg))
+			ctx.Send(event.New(ctx.UID(), msg.C2SMsgID_Business, c2sMsg))
 			logger.Log().Info("robot send business key value1 value2 wait expect", zap.Uint64("ID", ctx.Robot().ID()), zap.Int("key", key), zap.Int("value1", v1), zap.Int("value2", v2), zap.Int("expect", v1+v2))
 
 			if ctx.Robot().Counter() == 6 {
 				panic("robot painc here")
 			}
 		} else {
-
 			// condition: client exit actively
 			c2sMsg := &msg.C2SLogout{}
-			ctx.Linker().Send(event.New(msg.C2SMsgID_Logout, c2sMsg))
+			ctx.Send(event.New(ctx.UID(), msg.C2SMsgID_Logout, c2sMsg))
 			logger.Log().Info("robot send logout", zap.Uint64("ID", ctx.Robot().ID()))
 		}
 	}

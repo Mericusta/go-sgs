@@ -33,9 +33,12 @@ func New(conn net.Conn) *Linker {
 		uid:    uint64(time.Now().UnixNano()), // TODO: distributed-guid
 		state:  LINK_CONNECTED,
 		packer: packer.New(conn),
-		recv:   make(chan *event.Event, config.ChannelBuffer),
 		send:   make(chan *event.Event, config.ChannelBuffer),
 	}
+}
+
+func (l *Linker) Bind(recv chan *event.Event) {
+	l.recv = recv
 }
 
 func (l *Linker) UID() uint64 {
@@ -74,7 +77,7 @@ LOOP:
 			close(l.recv)
 			break LOOP
 		} else {
-			l.recv <- event.New(protocolID, protocolData)
+			l.recv <- event.New(l.uid, protocolID, protocolData)
 		}
 	}
 	logger.Log().Info("end recv-goroutine", zap.Uint64("uid", l.uid))

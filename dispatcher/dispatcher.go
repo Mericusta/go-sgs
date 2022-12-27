@@ -1,6 +1,8 @@
 package dispatcher
 
 import (
+	"fmt"
+
 	"github.com/Mericusta/go-sgs/config"
 	"github.com/Mericusta/go-sgs/event"
 	"github.com/Mericusta/go-sgs/linker"
@@ -12,23 +14,40 @@ import (
 type FrameworkHandler func(IContext, protocol.ProtocolMsg)
 
 type Dispatcher struct {
-	l                    *linker.Linker
+	index                int
+	linkerMap            map[uint64]*linker.Linker
 	eventChannel         chan *event.Event
+	recvChannel          chan *event.Event
 	handlerMgr           map[protocol.ProtocolID]FrameworkHandler
 	handlerMiddlewareMgr []HandlerMiddleware
 	recoverMiddleware    RecoverMiddleware
 }
 
-func New(l *linker.Linker) *Dispatcher {
+func New(index int) *Dispatcher {
 	return &Dispatcher{
-		l:            l,
+		index:        index,
+		linkerMap:    make(map[uint64]*linker.Linker, config.DispatcherLinkerCount),
 		eventChannel: make(chan *event.Event, config.ChannelBuffer),
+		recvChannel:  make(chan *event.Event, config.ChannelBuffer),
 		handlerMgr:   make(map[protocol.ProtocolID]FrameworkHandler),
 	}
 }
 
-func (d *Dispatcher) Linker() *linker.Linker {
-	return d.l
+func (d *Dispatcher) Index() int {
+	return d.index
+}
+
+func (d *Dispatcher) Bind(l *linker.Linker) error {
+	if _, has := d.linkerMap[l.UID()]; has {
+		return fmt.Errorf("link %v already exists in the dispatcher %v", l.UID(), d.index)
+	}
+	d.linkerMap[l.UID()] = l
+	l.Bind(d.recvChannel)
+	return nil
+}
+
+func (d *Dispatcher) Linker(UID uint64) *linker.Linker {
+	return d.linkerMap[UID]
 }
 
 func (d *Dispatcher) Dispatcher() *Dispatcher {
@@ -45,54 +64,36 @@ func (d *Dispatcher) SetRecoverMiddleware() {
 
 func (d *Dispatcher) HandleLogic() {
 	loopCounter := 0
-	logger.Log().Info("begin logic-goroutine", zap.Uint64("linker", d.Linker().UID()))
 LOOP:
 	for {
-		logger.Log().Debug("HandleLogic begin loop", zap.Int("loopCounter", loopCounter))
+		logger.Log().Debug("HandleLogic begin loop", zap.Int("dispatcher", d.index), zap.Int("loopCounter", loopCounter))
 		loopCounter++
 		select {
 		case e, ok := <-d.eventChannel: // 主动发送，可以通过关闭 eventChannel 来退出，和 context 原理相同
-			// 本地主动断开
 			if !ok {
-				logger.Log().Info("event channel closed", zap.Uint64("linker", d.Linker().UID()))
-				// d.Linker().Exit() // 关闭 connection，退出发送协程
+				logger.Log().Info("event channel closed", zap.Int("dispatcher", d.index))
 				// 关闭 connection 会导致接收协程退出
 				break LOOP
-				// TODO: 是否应该处理 recv 剩余的数据？
 			}
 
 			// 发送逻辑
-			logger.Log().Info("handle send-event", zap.Uint64("linker", d.Linker().UID()), zap.Any("event", e))
-			// if d.handleIntercept(e) {
-			// 	handler := d.handlerMgr[e.ID()]
-			// 	if handler == nil {
-			// 		fmt.Printf("Error: dispatcher event ID %v handler is nil", e.ID())
-			// 		continue
-			// 	}
-			// 	handler(d, e.Data())
-			// }
-			d.Linker().Send(e)
-		case e, ok := <-d.Linker().Recv(): // 被动接收
-			// tcp 套接字已断开（远端/本地都有可能），recv 协程已退出
-			// - 远端：需要关闭主动发送通道，需要退出发送协程，需要关闭 connection
-			// - 本地：需要关闭主动发送通道，需要退出发送协程，不需要关闭 connection（重复关闭）
-			// 	- 不可能由本地触发，因为 1-1-3 资源模型下，本地关闭只能由关闭 eventChannel 触发
+			logger.Log().Info("handle send-event", zap.Uint64("linker", e.LinkerUID()))
+			d.Linker(e.LinkerUID()).Send(e)
+		case e, ok := <-d.recvChannel: // 被动接收
 			if !ok {
-				logger.Log().Info("recv-channel closed", zap.Uint64("linker", d.Linker().UID()))
-				d.Linker().Exit() // 关闭 connection
-				logger.Log().Info("close event-channel", zap.Uint64("linker", d.Linker().UID()))
+				logger.Log().Info("recv-channel closed", zap.Int("dispatcher", d.index))
+				logger.Log().Info("close event-channel", zap.Int("dispatcher", d.index))
 				close(d.eventChannel) // 关闭主动发送通道
 				break LOOP            // 退出逻辑协程
-				// TODO: 是否需要处理 eventChannel 中剩余的内容？
 			}
 
 			// 接收逻辑
-			logger.Log().Info("handle recv-event", zap.Uint64("linker", d.Linker().UID()), zap.Any("event", e))
+			logger.Log().Info("handle recv-event", zap.Int("dispatcher", d.index), zap.Uint64("linker", e.LinkerUID()))
 			d.handle(e)
-			logger.Log().Debug("handle done", zap.Uint64("linker", d.Linker().UID()))
+			logger.Log().Debug("handle done", zap.Int("dispatcher", d.index), zap.Uint64("linker", e.LinkerUID()))
 		}
 	}
-	logger.Log().Info("end logic-goroutine", zap.Uint64("linker", d.Linker().UID()))
+	logger.Log().Info("end logic-goroutine", zap.Int("dispatcher", d.index))
 }
 
 func (d *Dispatcher) handle(e *event.Event) {
@@ -108,13 +109,13 @@ func (d *Dispatcher) handle(e *event.Event) {
 			logger.Log().Error("dispatcher event ID handler is nil", zap.Uint32("ID", uint32(e.ID())))
 			return
 		}
-		handler(d, e.Data())
+		handler(d.Linker(e.LinkerUID()), e.Data())
 	}
 }
 
 func (d *Dispatcher) handleIntercept(e *event.Event) bool {
 	for _, handleMiddleware := range d.handlerMiddlewareMgr {
-		if !handleMiddleware.Do(d, e) {
+		if !handleMiddleware.Do(d.Linker(e.LinkerUID()), e) {
 			return false
 		}
 	}
@@ -124,7 +125,14 @@ func (d *Dispatcher) handleIntercept(e *event.Event) bool {
 func (d *Dispatcher) Send(e *event.Event) {
 	select {
 	case d.eventChannel <- e:
+		logger.Log().Info("send event to dispatcher linker", zap.Int("dispatcher", d.index), zap.Uint64("linker", e.LinkerUID()))
 	default:
 		return
+	}
+}
+
+func (d *Dispatcher) ForRangeLinker(handle func(uint64, *Dispatcher) bool) {
+	for uid := range d.linkerMap {
+		handle(uid, d)
 	}
 }

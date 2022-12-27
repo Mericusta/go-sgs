@@ -1,0 +1,90 @@
+2022-12-27T17:57:42.673+0800	INFO	sg-server/main.go:22	SG-Server run
+2022-12-27T17:57:46.374+0800	INFO	framework/framework.go:108	create link and bind dispatcher	{"linker": 1672135066374133621, "dispatcher": 21, "newDispatcher": false}
+2022-12-27T17:57:46.375+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 0}
+2022-12-27T17:57:46.375+0800	INFO	linker/linker.go:64	begin recv goroutine	{"uid": 1672135066374133621}
+2022-12-27T17:57:46.375+0800	INFO	linker/linker.go:88	begin send-goroutine	{"uid": 1672135066374133621}
+2022-12-27T17:57:46.378+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:46.378+0800	INFO	sg-server/handler.go:35	link as user login with counter	{"linker": 1672135066374133621, "counter": 0}
+2022-12-27T17:57:46.379+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:46.379+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 1}
+2022-12-27T17:57:46.381+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:46.382+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135066380539457, "value1": 545, "value2": 527}
+2022-12-27T17:57:46.382+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:46.382+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 2}
+2022-12-27T17:57:47.385+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:47.386+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135067384308384, "value1": 455, "value2": 187}
+2022-12-27T17:57:47.386+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:47.386+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 3}
+2022-12-27T17:57:48.388+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:48.388+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135068387713731, "value1": 385, "value2": 390}
+2022-12-27T17:57:48.388+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:48.388+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 4}
+2022-12-27T17:57:49.391+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:49.391+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135069390797702, "value1": 825, "value2": 684}
+2022-12-27T17:57:49.392+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:49.392+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 5}
+2022-12-27T17:57:50.393+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:50.394+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135070393080314, "value1": 840, "value2": 932}
+2022-12-27T17:57:50.394+0800	WARN	dispatcher/dispatcher.go:102	dispatcher handle panic info and recover
+	{"panicInfo": "server panic here"}
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handle.func1
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:102
+runtime.gopanic
+	/usr/local/go/src/runtime/panic.go:884
+main.RegisterUserHandler.func1
+	/root/projects/go/src/github.com/go-sgs/example/sg-server/handler.go:80
+main.(*UserMiddleware).Do
+	/root/projects/go/src/github.com/go-sgs/example/sg-server/middleware.go:47
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handleIntercept
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:118
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).handle
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:106
+github.com/Mericusta/go-sgs/dispatcher.(*Dispatcher).HandleLogic
+	/root/projects/go/src/github.com/go-sgs/dispatcher/dispatcher.go:92
+2022-12-27T17:57:50.395+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:50.395+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 6}
+2022-12-27T17:57:51.396+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:51.396+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135071395445554, "value1": 198, "value2": 687}
+2022-12-27T17:57:51.396+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:51.396+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 7}
+2022-12-27T17:57:52.398+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:52.398+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135072397755086, "value1": 930, "value2": 1009}
+2022-12-27T17:57:52.399+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:52.399+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 8}
+2022-12-27T17:57:53.401+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:53.402+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135073400664056, "value1": 344, "value2": 282}
+2022-12-27T17:57:53.402+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:53.402+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 9}
+2022-12-27T17:57:54.404+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:54.404+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135074403304069, "value1": 651, "value2": 149}
+2022-12-27T17:57:54.404+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:54.404+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 10}
+2022-12-27T17:57:55.406+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:55.406+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135075405619785, "value1": 805, "value2": 994}
+2022-12-27T17:57:55.406+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:55.406+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 11}
+2022-12-27T17:57:56.408+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:56.408+0800	INFO	sg-server/handler.go:72	link as user recv business key value1 value2	{"linker": 1672135066374133621, "key": 1672135076407478032, "value1": 783, "value2": 218}
+2022-12-27T17:57:56.408+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:56.408+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 12}
+2022-12-27T17:57:57.410+0800	INFO	dispatcher/dispatcher.go:91	handle recv-event	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:57.410+0800	INFO	sg-server/handler.go:51	link as user logout	{"linker": 1672135066374133621}
+2022-12-27T17:57:57.410+0800	INFO	linker/linker.go:115	linker exit	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.410+0800	INFO	linker/linker.go:119	close packer	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:72	tcp socket closed by local	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:125	close send-channel	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:76	close recv-channel	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	DEBUG	dispatcher/dispatcher.go:93	handle done	{"dispatcher": 21, "linker": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	DEBUG	dispatcher/dispatcher.go:69	HandleLogic begin loop	{"dispatcher": 21, "loopCounter": 13}
+2022-12-27T17:57:57.411+0800	INFO	dispatcher/dispatcher.go:84	recv-channel closed	{"dispatcher": 21}
+2022-12-27T17:57:57.411+0800	INFO	dispatcher/dispatcher.go:85	close event-channel	{"dispatcher": 21}
+2022-12-27T17:57:57.412+0800	INFO	dispatcher/dispatcher.go:96	end logic-goroutine	{"dispatcher": 21}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:83	end recv-goroutine	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.411+0800	INFO	linker/linker.go:93	send-channel closed	{"uid": 1672135066374133621}
+2022-12-27T17:57:57.412+0800	INFO	linker/linker.go:106	end send-goroutine	{"uid": 1672135066374133621}
+2022-12-27T18:34:35.298+0800	INFO	framework/framework.go:167	stop signal
+2022-12-27T18:34:35.300+0800	INFO	framework/framework.go:170	exit framework
+2022-12-27T18:34:35.300+0800	INFO	framework/framework.go:149	close acceptor
+2022-12-27T18:34:35.300+0800	INFO	framework/framework.go:67	framework single acceptor closed
+2022-12-27T18:34:35.301+0800	INFO	framework/framework.go:75	single acceptor end accept-goroutine
+2022-12-27T18:34:35.301+0800	INFO	framework/framework.go:172	waitting 5 seconds
