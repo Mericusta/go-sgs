@@ -23,8 +23,8 @@ func NewSGServer() *SGServer {
 	)
 	sgs.AppendAcceptor(sgsAcceptor)
 	sgs.AppendHandleMiddleware(
-		NewServerMiddleware(sgs),
-		NewUserMiddleware(sgs),
+		NewServerHandlerMiddleware(sgs),
+		NewUserHandlerMiddleware(sgs),
 	)
 	return sgs
 }

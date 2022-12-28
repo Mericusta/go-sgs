@@ -118,12 +118,12 @@ func (f *Framework) run(connection net.Conn) {
 }
 
 func (f *Framework) dispatch(uid uint64) (*dispatcher.Dispatcher, bool) {
-	dispatcherIndex := int(uid) % (config.DispatcherCount)
-	_, has := f.dispatcherMgr[dispatcherIndex]
-	if !has {
-		f.dispatcherMgr[int(dispatcherIndex)] = dispatcher.New(dispatcherIndex)
+	dispatcherIndex := int(uid) % config.DispatcherCount
+	d, has := f.dispatcherMgr[dispatcherIndex]
+	if d == nil || !has {
+		f.dispatcherMgr[dispatcherIndex] = dispatcher.New(dispatcherIndex)
 	}
-	return f.dispatcherMgr[int(dispatcherIndex)], has
+	return f.dispatcherMgr[dispatcherIndex], has
 }
 
 func (f *Framework) RegisterHandler(msgID protocol.ProtocolID, handler dispatcher.FrameworkHandler) {

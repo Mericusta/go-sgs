@@ -8,15 +8,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type ServerMiddleware struct {
+type ServerHandlerMiddleware struct {
 	sgServer *SGServer
 }
 
-func NewServerMiddleware(sgServer *SGServer) *ServerMiddleware {
-	return &ServerMiddleware{sgServer: sgServer}
+func NewServerHandlerMiddleware(sgServer *SGServer) *ServerHandlerMiddleware {
+	return &ServerHandlerMiddleware{sgServer: sgServer}
 }
 
-func (m *ServerMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
+func (m *ServerHandlerMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := serverHandlerMgr[e.ID()]; handler != nil && has {
 		handler(NewServerContext(ctx, m.sgServer), e.Data())
 		return false
@@ -24,15 +24,15 @@ func (m *ServerMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	return true
 }
 
-type UserMiddleware struct {
+type UserHandlerMiddleware struct {
 	sgServer *SGServer
 }
 
-func NewUserMiddleware(sgServer *SGServer) *UserMiddleware {
-	return &UserMiddleware{sgServer: sgServer}
+func NewUserHandlerMiddleware(sgServer *SGServer) *UserHandlerMiddleware {
+	return &UserHandlerMiddleware{sgServer: sgServer}
 }
 
-func (m *UserMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
+func (m *UserHandlerMiddleware) Do(ctx dispatcher.IContext, e *event.Event) bool {
 	if handler, has := userHandlerMgr[e.ID()]; handler != nil && has {
 		iUser, has := m.sgServer.UserMgr().Load(ctx.UID()) // TODO: 性能瓶颈
 		if !has {
