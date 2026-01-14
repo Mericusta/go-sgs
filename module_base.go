@@ -27,14 +27,19 @@ type ModuleBase struct {
 	// 模块名称
 	identify string
 
-	// 订阅的最大长度
-	subjectMax int
+	// 组合自己的 Module
+	moduleSelf Module
 
 	// 模块上下文
 	ctx context.Context
 
-	// 模块控制信号
-	canceler context.CancelFunc
+	// 模块日志
+	logger *Logger
+
+	// 模块可处理事件数最大值
+	handleEventMax int
+
+	// --------
 
 	// 状态自旋锁
 	status atomic.Int32
@@ -42,73 +47,42 @@ type ModuleBase struct {
 	// 自旋锁 mount -> work 状态切换的等待自旋次数，用于定位
 	statusMount2WorkSpinLockCount int64
 
-	// 组合自己的 Module
-	moduleSelf Module
-
 	// 子 Module
 	subModules *stp.CMap[string, *moduleController]
-
-	// 模块日志
-	logger *Logger
 
 	// 事件生成标识
 	eventCounter atomic.Int64
 }
 
-func (*ModuleBase) WithIdentify(i string) ModuleOption {
-	return func(m Module) {
-		m.Base().setSelf(m) // 设置自引用
-		m.Base().setIdentify(i)
-	}
-}
+// setIdentify 设置模块标识
+func (m *ModuleBase) setIdentify(i string) { m.identify = i }
+func (m *ModuleBase) Identify() string     { return m.identify }
 
-func (m *ModuleBase) setSelf(ms Module) {
-	m.moduleSelf = ms
-}
+// setSelf 设置模块自引用
+func (m *ModuleBase) setSelf(ms Module) { m.moduleSelf = ms }
 
-func (m *ModuleBase) setIdentify(i string) {
-	m.identify = i
-}
+// setCtx 设置模块上下文
+func (m *ModuleBase) setCtx(ctx context.Context) { m.ctx = ctx }
+func (m *ModuleBase) Ctx() context.Context       { return m.ctx }
 
-func (*ModuleBase) WithCtx(c context.Context) ModuleOption {
-	return func(m Module) { m.Base().setCtx(c) }
-}
+// setLogger 设置模块日志
+func (m *ModuleBase) setLogger(logger *Logger) { m.logger = logger }
+func (m *ModuleBase) Logger() *Logger          { return m.logger }
 
-func (m *ModuleBase) setCtx(ctx context.Context) {
-	m.ctx = ctx
-}
+// setHandleEventMax 设置模块可处理事件数最大值
+func (m *ModuleBase) setHandleEventMax(max int) { m.handleEventMax = max }
+func (m *ModuleBase) HandleEvent(*ModuleEvent)  { m.Logger().Debug("no implement") }
 
-func (*ModuleBase) WithLogger(l *Logger) ModuleOption {
-	return func(m Module) {
-		m.Base().setLogger(l.New(Log.WithFields(zap.String("identify", m.Base().Identify()))))
-	}
-}
+// Mounted 挂载后的回调函数，实现 Module 接口
+func (m *ModuleBase) Mounted() {}
 
-func (m *ModuleBase) setLogger(logger *Logger) {
-	m.logger = logger
-}
+// Run 运行函数，实现 Module 接口
+func (m *ModuleBase) Run() {}
 
-func (m *ModuleBase) Identify() string { return m.identify }
-
-func (m *ModuleBase) Ctx() context.Context { return m.ctx }
-
-func (m *ModuleBase) Canceler() context.CancelFunc { return m.canceler }
-
-func (m *ModuleBase) Logger() *Logger { return m.logger }
-
-func (m *ModuleBase) HandleEvent(*ModuleEvent) { m.Logger().Debug("no implement") }
-
-func (*ModuleBase) WithSubjectMax(max int) ModuleOption {
-	return func(m Module) { m.Base().setSubjectMax(max) }
-}
-
-func (m *ModuleBase) setSubjectMax(max int) {
-	m.subjectMax = max
-}
-
-func (m *ModuleBase) Mounted()   {}
-func (m *ModuleBase) Run()       {}
+// Unmounted 卸载后的回调函数，实现 Module 接口
 func (m *ModuleBase) Unmounted() {}
+
+// ----------------------------------------------------------------
 
 func (m *ModuleBase) increaseStatusMount2WorkSpinLockCount() {
 	m.statusMount2WorkSpinLockCount++
@@ -144,12 +118,12 @@ func matchMark(identify string) bool {
 }
 
 func (m *ModuleBase) subscribe() {
-	subjectMax := m.subjectMax
-	if subjectMax <= 0 {
-		subjectMax = defaultSubjectMax
+	handleEventMax := m.handleEventMax
+	if handleEventMax <= 0 {
+		handleEventMax = defaultSubjectMax
 	}
 
-	c := SubjectManager.LoadOrCreateSubjectChan(m.identify, subjectMax)
+	c := SubjectManager.LoadOrCreateSubjectChan(m.identify, handleEventMax)
 
 	go m.waitEvent(c)
 }

@@ -22,7 +22,7 @@ type ModuleRoot struct {
 	ModuleBase
 }
 
-func (*ModuleRoot) New(mos ...ModuleOption) *ModuleRoot {
+func (*ModuleRoot) new(mos ...ModuleOption) *ModuleRoot {
 	m := &ModuleRoot{}
 	for _, mo := range mos {
 		mo(m)
@@ -31,7 +31,6 @@ func (*ModuleRoot) New(mos ...ModuleOption) *ModuleRoot {
 }
 
 func (m *ModuleRoot) Hold() {
-	// stp.Hold()
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP, os.Interrupt)
 	for {
@@ -65,7 +64,7 @@ func (m *ModuleRoot) Exit(identifies ...string) {
 		}
 	}
 
-	// TODO: 需要同步等待
+	// TODO: 需要同步等待所有子 module 的都 unmount 完毕，超时 unmount 的 module 需要用户强制处理并且退出
 	time.Sleep(time.Second * 3)
 }
 
@@ -75,6 +74,6 @@ func Root() *ModuleRoot {
 
 // 为单元测试生成的根节点
 func (m *ModuleRoot) UnitTest(identify string) *ModuleRoot {
-	Init(Base.WithIdentify(identify))
+	Init(WithIdentify(identify))
 	return root
 }

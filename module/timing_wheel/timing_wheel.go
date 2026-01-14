@@ -32,6 +32,12 @@ func (*ModuleTimingWheel) New(mos ...sgs.ModuleOption) *ModuleTimingWheel {
 	for _, mo := range mos {
 		mo(mtw)
 	}
+
+	// 创建默认标识
+	if len(mtw.ModuleBase.Identify()) == 0 {
+		sgs.WithIdentify("_ModuleTimingWheel")(mtw)
+	}
+
 	return mtw
 }
 

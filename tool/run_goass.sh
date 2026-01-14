@@ -1,0 +1,10 @@
+MODE=goass
+BIN_PATH=./bin/$MODE
+SAVE_DATA_PATH=./bin/$MODE/$MODE.json
+LOG_FILE_PATH=./bin/$MODE/$MODE.log
+
+mkdir -p $BIN_PATH
+touch $LOG_FILE_PATH
+touch $SAVE_DATA_PATH
+
+MODE=$MODE SAVE_DATA_PATH=$SAVE_DATA_PATH LOG_FILE_PATH=$LOG_FILE_PATH DEBUG_MODE=true go run cmd/goass.go

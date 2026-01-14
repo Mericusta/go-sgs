@@ -12,10 +12,38 @@ var sgsCanceler context.CancelFunc
 func Init(mos ...ModuleOption) {
 	// 构造根模块
 	rootCtx, rootCanceler := context.WithCancel(context.Background())
-	root = root.New(append(mos, Base.WithCtx(rootCtx))...)
+	root = root.new(append(mos, WithCtx(rootCtx))...)
 	sgsCanceler = rootCanceler
 }
 
+// WithIdentify 设置模块标识选项
+func WithIdentify(i string) ModuleOption {
+	return func(m Module) {
+		m.Base().setIdentify(i)
+		m.Base().setSelf(m)
+	}
+}
+
+// WithCtx 设置模块上下文选项
+func WithCtx(c context.Context) ModuleOption {
+	return func(m Module) { m.Base().setCtx(c) }
+}
+
+// WithLogger 设置模块日志选项
+func WithLogger(l *Logger) ModuleOption {
+	return func(m Module) {
+		m.Base().setLogger(l.New(
+			Log.WithFields(zap.String("identify", m.Base().Identify())),
+		))
+	}
+}
+
+// WithHandleEventMax 设置模块可处理事件数最大值选项
+func WithHandleEventMax(max int) ModuleOption {
+	return func(m Module) { m.Base().setHandleEventMax(max) }
+}
+
+// Mount main 协程：框架挂载模块
 func Mount(modules ...Module) {
 	for _, module := range modules {
 		root.Logger().Debug("OBSERVE: Mount module", zap.Any("module", module.Base().Identify()))
@@ -27,6 +55,7 @@ func Mount(modules ...Module) {
 	}
 }
 
+// Mounted main 协程：框架模块挂载完成
 func Mounted() {
 	root.Logger().Debug("OBSERVE: Mounted")
 	root.Mounted()

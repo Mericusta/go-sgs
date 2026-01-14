@@ -14,7 +14,7 @@ type Logger struct {
 	levelAt     zapcore.Level
 
 	// zap 日志实例
-	core *zap.Logger `pattern:"option,type=functional,ident=With"`
+	core *zap.Logger
 
 	// zap 日志 hook
 	hooks []func(*Logger)
@@ -87,12 +87,17 @@ func (*Logger) WithFields(fields ...zapcore.Field) func(*Logger) {
 	}
 }
 
+const (
+	LevelDebug = "debug"
+	LevelInfo  = "info"
+)
+
 func (*Logger) WithLevelAt(level string) func(*Logger) {
 	return func(l *Logger) {
 		switch strings.ToLower(strings.TrimSpace(level)) {
-		case "debug":
+		case LevelDebug:
 			l.levelAt = zap.DebugLevel
-		case "info":
+		case LevelInfo:
 			l.levelAt = zap.InfoLevel
 		default:
 			l.levelAt = zap.DebugLevel

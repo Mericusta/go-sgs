@@ -49,7 +49,6 @@ func (m *ModuleHttpServer) Mounted() {
 
 	m.engine = gin.New()
 	m.engine.Use(gin.Recovery())
-	// global middleware
 	for _, middleware := range m.middlewares {
 		m.engine.Use(func(ctx *gin.Context) {
 			middleware(&HttpContext{ModuleHttpServer: m, Context: ctx})
